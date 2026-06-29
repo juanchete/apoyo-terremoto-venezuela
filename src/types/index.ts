@@ -110,4 +110,6 @@ export interface IExtractedCampaign {
   goal_amount: number | null;
   raised_amount: number | null;
   currency: string | null;
+  // Fecha real de publicación en GoFundMe (ISO); null si no se pudo leer.
+  gofundme_created_at: string | null;
 }
