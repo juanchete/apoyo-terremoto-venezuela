@@ -1,7 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { GoFundMeBadge } from "@/components/GoFundMeBadge";
 import { categoryEmoji, categoryLabel } from "@/lib/constants";
+import { isGoFundMe } from "@/lib/campaign";
 import { formatMoney, formatPct } from "@/lib/format";
 import type { ICampaignWithStats } from "@/types";
 
@@ -11,6 +13,7 @@ interface ICampaignCardProps {
 
 export function CampaignCard({ campaign }: ICampaignCardProps) {
   const pct = campaign.collection_pct;
+  const fromGoFundMe = isGoFundMe(campaign.donation_url);
 
   return (
     <article className="group relative h-full rounded-2xl border border-border bg-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.18)] hover:border-primary/30">
@@ -73,12 +76,20 @@ export function CampaignCard({ campaign }: ICampaignCardProps) {
 
           <div className="mt-auto pt-4 flex items-center gap-3 text-xs text-muted">
             <span>📍 {campaign.region}</span>
-            <span className="ml-auto inline-flex items-center gap-1 text-trust font-medium">
-              ▲ {campaign.trust_count}
-            </span>
-            <span className="inline-flex items-center gap-1 text-distrust font-medium">
-              ▼ {campaign.distrust_count}
-            </span>
+            {fromGoFundMe ? (
+              <span className="ml-auto">
+                <GoFundMeBadge />
+              </span>
+            ) : (
+              <>
+                <span className="ml-auto inline-flex items-center gap-1 text-trust font-medium">
+                  ▲ {campaign.trust_count}
+                </span>
+                <span className="inline-flex items-center gap-1 text-distrust font-medium">
+                  ▼ {campaign.distrust_count}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </Link>

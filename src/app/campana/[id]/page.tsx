@@ -8,11 +8,13 @@ import {
 } from "@/lib/data/campaigns";
 import { getCurrentProfile } from "@/lib/data/auth";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { GoFundMeBadge } from "@/components/GoFundMeBadge";
 import { TrustVoteWidget } from "@/components/TrustVoteWidget";
 import { OperatorActionBar } from "@/components/OperatorActionBar";
 import { AuthorControls } from "@/components/AuthorControls";
 import { ReportButton } from "@/components/ReportButton";
 import { categoryEmoji, categoryLabel } from "@/lib/constants";
+import { isGoFundMe } from "@/lib/campaign";
 import { formatMoney, formatPct } from "@/lib/format";
 
 interface ICampaignPageProps {
@@ -37,6 +39,7 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
   const isOperator = profile?.role === "operator";
   const isAuthor = profile?.id === campaign.author_id;
   const pct = campaign.collection_pct;
+  const fromGoFundMe = isGoFundMe(campaign.donation_url);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -58,6 +61,7 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
               {categoryEmoji(campaign.category)} {categoryLabel(campaign.category)}
             </span>
             <span className="text-sm text-muted">📍 {campaign.region}</span>
+            {fromGoFundMe && <GoFundMeBadge size="md" />}
             {campaign.is_verified && <VerifiedBadge size="md" />}
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold">{campaign.title}</h1>
@@ -129,13 +133,20 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
           </p>
         </div>
 
-        <TrustVoteWidget
-          campaignId={campaign.id}
-          trustCount={campaign.trust_count}
-          distrustCount={campaign.distrust_count}
-          myVote={myVote?.value ?? null}
-          isAuthenticated={Boolean(profile)}
-        />
+        {fromGoFundMe ? (
+          <p className="text-sm text-muted">
+            La confianza y los pagos se gestionan en GoFundMe, que tiene su
+            propia verificación. Aun así, puedes reportarla si algo no cuadra.
+          </p>
+        ) : (
+          <TrustVoteWidget
+            campaignId={campaign.id}
+            trustCount={campaign.trust_count}
+            distrustCount={campaign.distrust_count}
+            myVote={myVote?.value ?? null}
+            isAuthenticated={Boolean(profile)}
+          />
+        )}
 
         <ReportButton
           campaignId={campaign.id}

@@ -1,10 +1,8 @@
 import 'server-only';
 import { generateText } from 'ai';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { z } from 'zod';
+import { getAiModel, hasGatewayAuth, parseJsonObject } from '@/lib/ai/client';
 import type { TAiStatus } from '@/types';
-
-const MODEL = process.env.OPENROUTER_MODEL ?? 'openrouter/owl-alpha';
 
 export interface IModerationInput {
   title: string;
@@ -25,29 +23,6 @@ const analysisSchema = z.object({
   reasoning: z.string(),
 });
 
-function hasGatewayAuth(): boolean {
-  return Boolean(process.env.OPENROUTER_API_KEY);
-}
-
-function getModel() {
-  const openrouter = createOpenAICompatible({
-    name: 'openrouter',
-    apiKey: process.env.OPENROUTER_API_KEY,
-    baseURL: 'https://openrouter.ai/api/v1',
-  });
-  return openrouter(MODEL);
-}
-
-// Extrae el primer objeto JSON del texto (tolera ```json ``` y prosa alrededor).
-function parseJson(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf('{');
-  const end = candidate.lastIndexOf('}');
-  if (start === -1 || end === -1) throw new Error('Sin JSON en la respuesta.');
-  return JSON.parse(candidate.slice(start, end + 1));
-}
-
 export async function analyzeCampaign(
   input: IModerationInput,
 ): Promise<IModerationResult> {
@@ -62,7 +37,7 @@ export async function analyzeCampaign(
 
   try {
     const { text } = await generateText({
-      model: getModel(),
+      model: getAiModel(),
       prompt: `Eres el filtro inicial de una plataforma que centraliza campañas de GoFundMe para los afectados por el terremoto en Venezuela.
 
 Analiza esta campaña:
@@ -82,7 +57,7 @@ Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, con esta f
 }`,
     });
 
-    const parsed = analysisSchema.safeParse(parseJson(text));
+    const parsed = analysisSchema.safeParse(parseJsonObject(text));
     if (!parsed.success) {
       return { status: 'error', notes: 'Respuesta de IA no interpretable.' };
     }
