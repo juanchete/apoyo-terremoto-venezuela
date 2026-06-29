@@ -1,4 +1,29 @@
-import type { TNeedCategory } from '@/types';
+import type { TNeedCategory, TUserRole } from '@/types';
+
+// Roles del sistema. Jerarquía: user < operator < super_admin.
+export interface IRoleMeta {
+  value: TUserRole;
+  label: string;
+  description: string;
+}
+
+export const USER_ROLES: readonly IRoleMeta[] = [
+  { value: 'user', label: 'Usuario', description: 'Publica, vota y reporta.' },
+  {
+    value: 'operator',
+    label: 'Operador',
+    description: 'Modera campañas: verifica, baja/restaura, resuelve reportes.',
+  },
+  {
+    value: 'super_admin',
+    label: 'Super admin',
+    description: 'Todo lo de operador + administra el equipo y los roles.',
+  },
+] as const;
+
+export function roleLabel(value: TUserRole): string {
+  return USER_ROLES.find((r) => r.value === value)?.label ?? value;
+}
 
 // Estados de Venezuela — usados para clasificar campañas por región afectada.
 export const VENEZUELA_REGIONS: readonly string[] = [

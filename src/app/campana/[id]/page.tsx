@@ -37,7 +37,8 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
     hasReported(id),
   ]);
 
-  const isOperator = profile?.role === "operator";
+  const isOperator =
+    profile?.role === "operator" || profile?.role === "super_admin";
   const isAuthor = profile?.id === campaign.author_id;
   const fromGoFundMe = isGoFundMe(campaign.donation_url);
 
