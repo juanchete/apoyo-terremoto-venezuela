@@ -40,6 +40,7 @@ export const NEED_CATEGORIES: readonly INeedCategoryMeta[] = [
   { value: 'funeral', label: 'Gastos Funerarios', emoji: '🕯️' },
   { value: 'recovery', label: 'Recuperación / Vivienda', emoji: '🏠' },
   { value: 'children', label: 'Enfoque Infantil', emoji: '🧒' },
+  { value: 'other', label: 'Otros', emoji: '🤝' },
 ] as const;
 
 export function categoryLabel(value: TNeedCategory): string {

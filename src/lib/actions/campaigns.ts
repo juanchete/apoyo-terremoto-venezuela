@@ -15,6 +15,7 @@ const VALID_CATEGORIES: readonly TNeedCategory[] = [
   'funeral',
   'recovery',
   'children',
+  'other',
 ];
 
 interface IParsedCampaign {

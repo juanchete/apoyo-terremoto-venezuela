@@ -4,7 +4,13 @@ import { useState, useTransition } from "react";
 import { createCampaign, updateCampaign } from "@/lib/actions/campaigns";
 import { extractCampaign } from "@/lib/actions/ingest";
 import { VENEZUELA_REGIONS, NEED_CATEGORIES } from "@/lib/constants";
+import { formatMoney, formatPct } from "@/lib/format";
 import type { ICampaign, TNeedCategory } from "@/types";
+
+function toNumber(raw: string): number {
+  const n = Number(raw.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
 
 interface ICampaignFormProps {
   campaign?: ICampaign;
@@ -49,6 +55,11 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
   const [extractMsg, setExtractMsg] = useState<string | null>(null);
   const [isExtracting, startExtract] = useTransition();
   const [isSaving, startSave] = useTransition();
+
+  // Vista previa en vivo del progreso (recaudado vs meta).
+  const goalNum = toNumber(form.goal_amount);
+  const raisedNum = toNumber(form.raised_amount);
+  const livePct = goalNum > 0 ? Math.min(raisedNum / goalNum, 1) : null;
 
   function set<K extends keyof IFormState>(key: K, value: IFormState[K]): void {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -115,7 +126,12 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
             {isExtracting ? "Leyendo…" : "Autocompletar"}
           </button>
         </div>
-        {extractMsg && <p className="text-xs text-muted">{extractMsg}</p>}
+        <p className="text-xs text-muted">
+          Trae automáticamente el <strong>título</strong>, la{" "}
+          <strong>imagen</strong> y los <strong>montos</strong> de tu GoFundMe.
+          Luego puedes editarlos.
+        </p>
+        {extractMsg && <p className="text-xs text-trust">{extractMsg}</p>}
       </div>
 
       <div className="space-y-1.5">
@@ -202,52 +218,81 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
         />
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-4">
-        <div className="space-y-1.5">
-          <label htmlFor="goal_amount" className="block text-sm font-medium">
-            Meta
-          </label>
-          <input
-            id="goal_amount"
-            name="goal_amount"
-            type="text"
-            inputMode="decimal"
-            value={form.goal_amount}
-            onChange={(e) => set("goal_amount", e.target.value)}
-            placeholder="5000"
-            className={fieldClass}
-          />
+      <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 space-y-3">
+        <div>
+          <p className="text-sm font-medium">Meta y recaudado</p>
+          <p className="text-xs text-muted">
+            Clave para los donantes: muestra cuánto falta. Prioriza las
+            campañas más lejos de su meta.
+          </p>
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor="raised_amount" className="block text-sm font-medium">
-            Recaudado
-          </label>
-          <input
-            id="raised_amount"
-            name="raised_amount"
-            type="text"
-            inputMode="decimal"
-            value={form.raised_amount}
-            onChange={(e) => set("raised_amount", e.target.value)}
-            placeholder="0"
-            className={fieldClass}
-          />
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <label htmlFor="goal_amount" className="block text-sm font-medium">
+              Meta
+            </label>
+            <input
+              id="goal_amount"
+              name="goal_amount"
+              type="text"
+              inputMode="decimal"
+              value={form.goal_amount}
+              onChange={(e) => set("goal_amount", e.target.value)}
+              placeholder="5000"
+              className={fieldClass}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="raised_amount" className="block text-sm font-medium">
+              Recaudado
+            </label>
+            <input
+              id="raised_amount"
+              name="raised_amount"
+              type="text"
+              inputMode="decimal"
+              value={form.raised_amount}
+              onChange={(e) => set("raised_amount", e.target.value)}
+              placeholder="0"
+              className={fieldClass}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="currency" className="block text-sm font-medium">
+              Moneda
+            </label>
+            <input
+              id="currency"
+              name="currency"
+              type="text"
+              maxLength={3}
+              value={form.currency}
+              onChange={(e) => set("currency", e.target.value.toUpperCase())}
+              placeholder="USD"
+              className={fieldClass}
+            />
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor="currency" className="block text-sm font-medium">
-            Moneda
-          </label>
-          <input
-            id="currency"
-            name="currency"
-            type="text"
-            maxLength={3}
-            value={form.currency}
-            onChange={(e) => set("currency", e.target.value.toUpperCase())}
-            placeholder="USD"
-            className={fieldClass}
-          />
-        </div>
+
+        {goalNum > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <div className="h-2 w-full rounded-full bg-background overflow-hidden border border-border">
+              <div
+                className="h-full rounded-full bg-trust transition-[width] duration-300"
+                style={{ width: `${Math.round((livePct ?? 0) * 100)}%` }}
+              />
+            </div>
+            <p className="text-xs tabular-nums">
+              <span className="text-trust font-semibold">
+                {formatMoney(raisedNum, form.currency || "USD")}
+              </span>{" "}
+              <span className="text-muted">
+                de {formatMoney(goalNum, form.currency || "USD")} ·{" "}
+                {livePct !== null ? formatPct(livePct) : ""} de la meta
+              </span>
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -270,7 +315,10 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
 
       <div className="space-y-1.5">
         <label htmlFor="image_url" className="block text-sm font-medium">
-          Imagen <span className="text-muted font-normal">(URL, opcional)</span>
+          Imagen{" "}
+          <span className="text-muted font-normal">
+            — la de tu GoFundMe, o pega otra URL
+          </span>
         </label>
         <input
           id="image_url"
@@ -282,6 +330,27 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
           placeholder="https://..."
           className={fieldClass}
         />
+        {form.image_url.trim() ? (
+          <figure className="mt-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              key={form.image_url}
+              src={form.image_url}
+              alt="Vista previa de la imagen de la campaña"
+              className="w-full max-h-56 object-cover rounded-xl border border-border"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+            <figcaption className="text-xs text-muted mt-1">
+              Así se verá la imagen de tu campaña.
+            </figcaption>
+          </figure>
+        ) : (
+          <p className="text-xs text-muted">
+            Sin imagen se mostrará un ícono según la categoría.
+          </p>
+        )}
       </div>
 
       <p className="text-xs text-muted">

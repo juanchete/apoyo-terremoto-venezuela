@@ -1,7 +1,12 @@
 export type TUserRole = 'user' | 'operator';
 export type TCampaignStatus = 'active' | 'removed';
 export type TVoteValue = 'trust' | 'distrust';
-export type TNeedCategory = 'medical' | 'funeral' | 'recovery' | 'children';
+export type TNeedCategory =
+  | 'medical'
+  | 'funeral'
+  | 'recovery'
+  | 'children'
+  | 'other';
 export type TAiStatus = 'pending' | 'relevant' | 'flagged' | 'error';
 export type TReportStatus = 'open' | 'reviewed';
 
