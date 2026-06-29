@@ -1,4 +1,4 @@
-export type TUserRole = 'user' | 'operator';
+export type TUserRole = 'user' | 'operator' | 'super_admin';
 export type TCampaignStatus = 'active' | 'removed';
 export type TVoteValue = 'trust' | 'distrust';
 export type TNeedCategory =
@@ -13,6 +13,15 @@ export type TReportStatus = 'open' | 'reviewed';
 export interface IProfile {
   id: string;
   display_name: string;
+  role: TUserRole;
+  created_at: string;
+}
+
+// Miembro del equipo visto desde el panel de gestión: perfil + email de auth.
+export interface ITeamMember {
+  id: string;
+  display_name: string;
+  email: string | null;
   role: TUserRole;
   created_at: string;
 }

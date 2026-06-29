@@ -10,7 +10,9 @@ import type { ICampaignWithStats } from "@/types";
 export default async function OperadorPage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login?next=/operador");
-  if (profile.role !== "operator") redirect("/");
+  if (profile.role !== "operator" && profile.role !== "super_admin")
+    redirect("/");
+  const isSuperAdmin = profile.role === "super_admin";
 
   const [campaigns, openReports] = await Promise.all([
     getOperatorQueue(),
@@ -30,7 +32,17 @@ export default async function OperadorPage() {
   return (
     <div className="space-y-8">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Panel de voluntarios</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold">Panel de voluntarios</h1>
+          {isSuperAdmin && (
+            <Link
+              href="/operador/equipo"
+              className="shrink-0 rounded-full border border-border px-3 py-1.5 text-sm font-medium hover:bg-card"
+            >
+              Equipo
+            </Link>
+          )}
+        </div>
         <p className="text-sm text-muted">
           Revisa, verifica y modera las campañas. Las marcadas por la IA o
           reportadas por la comunidad aparecen primero.

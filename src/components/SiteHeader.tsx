@@ -5,7 +5,8 @@ import { CreateCampaignButton } from "@/components/CreateCampaignButton";
 
 export async function SiteHeader() {
   const profile = await getCurrentProfile();
-  const isOperator = profile?.role === "operator";
+  const isOperator =
+    profile?.role === "operator" || profile?.role === "super_admin";
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-[color-mix(in_oklab,var(--background)_82%,transparent)] backdrop-blur-md">
