@@ -14,8 +14,9 @@ import { OperatorActionBar } from "@/components/OperatorActionBar";
 import { AuthorControls } from "@/components/AuthorControls";
 import { ReportButton } from "@/components/ReportButton";
 import { categoryEmoji, categoryLabel } from "@/lib/constants";
-import { isGoFundMe } from "@/lib/campaign";
-import { formatMoney, formatPct } from "@/lib/format";
+import { isGoFundMe, collectionPct } from "@/lib/campaign";
+import { refreshAmountsIfStale } from "@/lib/ingest/sync";
+import { formatMoney, formatPct, formatRelativeTime } from "@/lib/format";
 
 interface ICampaignPageProps {
   params: Promise<{ id: string }>;
@@ -38,8 +39,19 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
 
   const isOperator = profile?.role === "operator";
   const isAuthor = profile?.id === campaign.author_id;
-  const pct = campaign.collection_pct;
   const fromGoFundMe = isGoFundMe(campaign.donation_url);
+
+  // Refresca los montos desde GoFundMe si el dato está viejo (>30 min).
+  // Best-effort: si no hay nada que actualizar, se usan los valores guardados.
+  const synced = await refreshAmountsIfStale(campaign);
+  const raisedAmount = synced?.raised_amount ?? campaign.raised_amount;
+  const goalAmount = synced?.goal_amount ?? campaign.goal_amount;
+  const currency = synced?.currency ?? campaign.currency;
+  const lastSyncedAt = synced?.last_synced_at ?? campaign.last_synced_at;
+  const pct = synced
+    ? collectionPct(raisedAmount, goalAmount)
+    : campaign.collection_pct;
+  const syncedLabel = fromGoFundMe ? formatRelativeTime(lastSyncedAt) : null;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -83,7 +95,7 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
           </div>
         )}
 
-        {campaign.goal_amount ? (
+        {goalAmount ? (
           <div className="rounded-xl border border-border bg-card p-4 space-y-2">
             <div className="h-3 w-full rounded-full bg-background overflow-hidden border border-border">
               <div
@@ -93,13 +105,18 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
             </div>
             <div className="flex justify-between items-baseline tabular-nums">
               <span className="text-lg font-bold text-trust">
-                {formatMoney(campaign.raised_amount, campaign.currency)}
+                {formatMoney(raisedAmount, currency)}
               </span>
               <span className="text-sm text-muted">
                 {pct !== null ? `${formatPct(pct)} de ` : ""}
-                {formatMoney(campaign.goal_amount, campaign.currency)}
+                {formatMoney(goalAmount, currency)}
               </span>
             </div>
+            {syncedLabel && (
+              <p className="text-xs text-muted">
+                Montos de GoFundMe · actualizado {syncedLabel}
+              </p>
+            )}
           </div>
         ) : null}
 

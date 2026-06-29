@@ -21,3 +21,20 @@ export function formatNumber(amount: number): string {
 export function formatPct(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
 }
+
+// "hace 5 min", "hace 2 h", "hace 3 días" — para mostrar qué tan fresco es un
+// dato. Entrada: timestamp ISO (o null).
+export function formatRelativeTime(iso: string | null): string | null {
+  if (!iso) return null;
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return null;
+
+  const diffSec = Math.max(0, Math.round((Date.now() - then) / 1000));
+  if (diffSec < 60) return 'hace un momento';
+  const min = Math.round(diffSec / 60);
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.round(h / 24);
+  return d === 1 ? 'hace 1 día' : `hace ${d} días`;
+}

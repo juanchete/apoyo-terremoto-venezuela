@@ -36,6 +36,7 @@ export interface ICampaign {
   verified_at: string | null;
   ai_status: TAiStatus;
   ai_notes: string | null;
+  last_synced_at: string | null;
   created_at: string;
 }
 
