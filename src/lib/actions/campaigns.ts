@@ -132,11 +132,20 @@ export async function createCampaign(formData: FormData): Promise<IActionResult>
     existingTitles: (existing ?? []).map((c) => c.title as string),
   });
 
+  // Baseline de lo que scrapeó la IA al autocompletar (campos ocultos del
+  // formulario). Sirve para detectar después si un humano alteró los montos.
+  const ai_goal_amount = parseAmount(String(formData.get('ai_goal_amount') ?? ''));
+  const ai_raised_amount = parseAmount(
+    String(formData.get('ai_raised_amount') ?? ''),
+  );
+
   const { data, error } = await supabase
     .from('campaigns')
     .insert({
       author_id: user.id,
       ...parsed.data,
+      ai_goal_amount,
+      ai_raised_amount,
       ai_status: ai.status,
       ai_notes: ai.notes,
     })

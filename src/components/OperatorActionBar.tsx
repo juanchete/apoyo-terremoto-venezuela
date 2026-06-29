@@ -4,11 +4,14 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { setVerified, setCampaignStatus } from "@/lib/actions/operator";
 import { resolveReports } from "@/lib/actions/reports";
+import { formatDate } from "@/lib/format";
 import type { TAiStatus, TCampaignStatus } from "@/types";
 
 interface IOperatorActionBarProps {
   campaignId: string;
   isVerified: boolean;
+  verifiedAt: string | null;
+  verifiedByName: string | null;
   status: TCampaignStatus;
   aiStatus: TAiStatus;
   aiNotes: string | null;
@@ -25,6 +28,8 @@ const AI_LABEL: Record<TAiStatus, { text: string; cls: string }> = {
 export function OperatorActionBar({
   campaignId,
   isVerified,
+  verifiedAt,
+  verifiedByName,
   status,
   aiStatus,
   aiNotes,
@@ -33,6 +38,8 @@ export function OperatorActionBar({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const verifiedDate = isVerified ? formatDate(verifiedAt) : null;
 
   function run(fn: () => Promise<{ error?: string }>): void {
     setError(null);
@@ -64,6 +71,13 @@ export function OperatorActionBar({
       {aiNotes && (
         <p className="text-xs text-muted italic border-l-2 border-border pl-2">
           {aiNotes}
+        </p>
+      )}
+
+      {isVerified && verifiedDate && (
+        <p className="text-xs text-verified">
+          ✓ Verificada el {verifiedDate}
+          {verifiedByName ? ` por ${verifiedByName}` : ""}
         </p>
       )}
 

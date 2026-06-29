@@ -4,7 +4,14 @@ import { getCurrentProfile } from "@/lib/data/auth";
 import { getOperatorQueue, getOpenReports } from "@/lib/data/campaigns";
 import { OperatorActionBar } from "@/components/OperatorActionBar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { AlertBadges } from "@/components/AlertBadges";
 import { categoryEmoji, categoryLabel } from "@/lib/constants";
+import { getUsdRates } from "@/lib/fx";
+import {
+  buildAlertContext,
+  computeAlerts,
+  type IAlert,
+} from "@/lib/operator/alerts";
 import type { ICampaignWithStats } from "@/types";
 
 export default async function OperadorPage() {
@@ -14,17 +21,35 @@ export default async function OperadorPage() {
     redirect("/");
   const isSuperAdmin = profile.role === "super_admin";
 
-  const [campaigns, openReports] = await Promise.all([
+  const [campaigns, openReports, rates] = await Promise.all([
     getOperatorQueue(),
     getOpenReports(),
+    getUsdRates(),
   ]);
 
   const active = campaigns.filter((c) => c.status === "active");
+
+  // Alertas de monto derivadas (#1 promedio, #2 discrepancia IA, #4 salto de
+  // meta). Se calculan sobre las activas usando el promedio por categoría.
+  const alertCtx = buildAlertContext(active, rates);
+  const alertsByCampaign = new Map<string, IAlert[]>(
+    active.map((c) => [c.id, computeAlerts(c, alertCtx, rates)]),
+  );
+  const alertsOf = (c: ICampaignWithStats): IAlert[] =>
+    alertsByCampaign.get(c.id) ?? [];
+
   const priority = active.filter(
-    (c) => c.open_reports > 0 || c.ai_status === "flagged",
+    (c) =>
+      c.open_reports > 0 ||
+      c.ai_status === "flagged" ||
+      alertsOf(c).length > 0,
   );
   const pending = active.filter(
-    (c) => !c.is_verified && c.open_reports === 0 && c.ai_status !== "flagged",
+    (c) =>
+      !c.is_verified &&
+      c.open_reports === 0 &&
+      c.ai_status !== "flagged" &&
+      alertsOf(c).length === 0,
   );
   const verified = active.filter((c) => c.is_verified && c.open_reports === 0);
   const removed = campaigns.filter((c) => c.status === "removed");
@@ -79,10 +104,26 @@ export default async function OperadorPage() {
         </section>
       )}
 
-      <QueueSection title="⚠️ Prioridad (reportadas / marcadas por IA)" campaigns={priority} />
-      <QueueSection title="Por revisar" campaigns={pending} />
-      <QueueSection title="Verificadas" campaigns={verified} />
-      <QueueSection title="Publicaciones bajadas" campaigns={removed} />
+      <QueueSection
+        title="⚠️ Prioridad (alertas / reportes / IA)"
+        campaigns={priority}
+        alertsByCampaign={alertsByCampaign}
+      />
+      <QueueSection
+        title="Por revisar"
+        campaigns={pending}
+        alertsByCampaign={alertsByCampaign}
+      />
+      <QueueSection
+        title="Verificadas"
+        campaigns={verified}
+        alertsByCampaign={alertsByCampaign}
+      />
+      <QueueSection
+        title="Publicaciones bajadas"
+        campaigns={removed}
+        alertsByCampaign={alertsByCampaign}
+      />
     </div>
   );
 }
@@ -111,9 +152,10 @@ function Stat({ label, value, tone }: IStatProps) {
 interface IQueueSectionProps {
   title: string;
   campaigns: ICampaignWithStats[];
+  alertsByCampaign: Map<string, IAlert[]>;
 }
 
-function QueueSection({ title, campaigns }: IQueueSectionProps) {
+function QueueSection({ title, campaigns, alertsByCampaign }: IQueueSectionProps) {
   if (campaigns.length === 0) return null;
 
   return (
@@ -142,12 +184,15 @@ function QueueSection({ title, campaigns }: IQueueSectionProps) {
               </div>
               {campaign.is_verified && <VerifiedBadge />}
             </div>
+            <AlertBadges alerts={alertsByCampaign.get(campaign.id) ?? []} />
             <p className="text-sm text-muted line-clamp-2">
               {campaign.description}
             </p>
             <OperatorActionBar
               campaignId={campaign.id}
               isVerified={campaign.is_verified}
+              verifiedAt={campaign.verified_at}
+              verifiedByName={campaign.verified_by_name}
               status={campaign.status}
               aiStatus={campaign.ai_status}
               aiNotes={campaign.ai_notes}

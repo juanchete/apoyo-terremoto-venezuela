@@ -22,6 +22,19 @@ export function formatPct(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
 }
 
+// Fecha absoluta legible, p. ej. "12 jun 2026" — para registros de auditoría
+// (cuándo se verificó una campaña) donde el tiempo relativo pierde precisión.
+export function formatDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('es-VE', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+}
+
 // "hace 5 min", "hace 2 h", "hace 3 días" — para mostrar qué tan fresco es un
 // dato. Entrada: timestamp ISO (o null).
 export function formatRelativeTime(iso: string | null): string | null {

@@ -39,6 +39,11 @@ export interface ICampaign {
   goal_amount: number | null;
   raised_amount: number;
   currency: string;
+  // Baseline scrapeado por la IA al crear (null si la carga fue manual).
+  ai_goal_amount: number | null;
+  ai_raised_amount: number | null;
+  // Meta al momento de crear; baseline para detectar saltos de meta.
+  original_goal_amount: number | null;
   status: TCampaignStatus;
   is_verified: boolean;
   verified_by: string | null;
@@ -51,6 +56,8 @@ export interface ICampaign {
 
 export interface ICampaignWithStats extends ICampaign {
   author_name: string;
+  // Nombre del voluntario que otorgó el sello (null si no está verificada).
+  verified_by_name: string | null;
   trust_count: number;
   distrust_count: number;
   total_votes: number;

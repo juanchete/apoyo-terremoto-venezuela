@@ -16,7 +16,12 @@ import { ReportButton } from "@/components/ReportButton";
 import { categoryEmoji, categoryLabel } from "@/lib/constants";
 import { isGoFundMe, collectionPct } from "@/lib/campaign";
 import { refreshAmountsIfStale } from "@/lib/ingest/sync";
-import { formatMoney, formatPct, formatRelativeTime } from "@/lib/format";
+import {
+  formatDate,
+  formatMoney,
+  formatPct,
+  formatRelativeTime,
+} from "@/lib/format";
 
 interface ICampaignPageProps {
   params: Promise<{ id: string }>;
@@ -54,6 +59,11 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
     : campaign.collection_pct;
   const syncedLabel = fromGoFundMe ? formatRelativeTime(lastSyncedAt) : null;
 
+  // Trazabilidad del sello: cuándo y quién verificó la campaña.
+  const verifiedDate = campaign.is_verified
+    ? formatDate(campaign.verified_at)
+    : null;
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <Link href="/" className="text-sm text-muted hover:text-foreground">
@@ -81,6 +91,14 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
           <p className="text-sm text-muted">
             Publicada por {campaign.author_name}
           </p>
+          {campaign.is_verified && verifiedDate && (
+            <p className="text-xs text-verified">
+              Verificada el {verifiedDate}
+              {campaign.verified_by_name
+                ? ` por ${campaign.verified_by_name}`
+                : ""}
+            </p>
+          )}
         </div>
 
         {campaign.image_url && (
@@ -178,6 +196,8 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
           <OperatorActionBar
             campaignId={campaign.id}
             isVerified={campaign.is_verified}
+            verifiedAt={campaign.verified_at}
+            verifiedByName={campaign.verified_by_name}
             status={campaign.status}
             aiStatus={campaign.ai_status}
             aiNotes={campaign.ai_notes}

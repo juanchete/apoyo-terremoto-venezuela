@@ -33,6 +33,10 @@ interface IFormState {
   goal_amount: string;
   raised_amount: string;
   currency: string;
+  // Baseline de los montos que leyó la IA al autocompletar (no editable por
+  // el usuario). Se manda oculto para detectar manipulación posterior.
+  ai_goal_amount: string;
+  ai_raised_amount: string;
 }
 
 const fieldClass =
@@ -51,6 +55,10 @@ function initialState(campaign?: ICampaign): IFormState {
     raised_amount:
       campaign?.raised_amount != null ? String(campaign.raised_amount) : "",
     currency: campaign?.currency ?? "USD",
+    ai_goal_amount:
+      campaign?.ai_goal_amount != null ? String(campaign.ai_goal_amount) : "",
+    ai_raised_amount:
+      campaign?.ai_raised_amount != null ? String(campaign.ai_raised_amount) : "",
   };
 }
 
@@ -93,6 +101,11 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
         raised_amount:
           d.raised_amount != null ? String(d.raised_amount) : prev.raised_amount,
         currency: d.currency ?? prev.currency,
+        // Congela lo que leyó la IA como referencia para el equipo moderador.
+        ai_goal_amount:
+          d.goal_amount != null ? String(d.goal_amount) : prev.ai_goal_amount,
+        ai_raised_amount:
+          d.raised_amount != null ? String(d.raised_amount) : prev.ai_raised_amount,
       }));
       setExtractMsg("Datos autocompletados. Revísalos y completa lo que falte.");
     });
@@ -250,6 +263,13 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
       </div>
 
       <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 space-y-3">
+        {/* Baseline IA: no editable, viaja oculto para moderación. */}
+        <input type="hidden" name="ai_goal_amount" value={form.ai_goal_amount} />
+        <input
+          type="hidden"
+          name="ai_raised_amount"
+          value={form.ai_raised_amount}
+        />
         <div>
           <p className="text-sm font-medium">Meta y recaudado</p>
           <p className="text-xs text-muted">
