@@ -1,47 +1,50 @@
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/data/auth";
 import { signOut } from "@/lib/actions/auth";
+import { CreateCampaignButton } from "@/components/CreateCampaignButton";
 
 export async function SiteHeader() {
   const profile = await getCurrentProfile();
   const isOperator = profile?.role === "operator";
 
   return (
-    <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-20">
-      <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span aria-hidden className="text-xl">🇻🇪</span>
-          <span className="leading-tight">
-            Apoyo Terremoto
-            <span className="block text-xs font-normal text-muted">
+    <header className="sticky top-0 z-30 border-b border-border bg-[color-mix(in_oklab,var(--background)_82%,transparent)] backdrop-blur-md">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-4">
+        <Link href="/" className="group flex items-center gap-2.5">
+          <span
+            aria-hidden
+            className="grid place-items-center size-9 rounded-full bg-primary/12 text-base"
+          >
+            🇻🇪
+          </span>
+          <span className="leading-none">
+            <span className="font-display text-lg text-foreground tracking-tight">
+              Apoyo Terremoto
+            </span>
+            <span className="block text-[11px] uppercase tracking-[0.18em] text-muted mt-0.5">
               Venezuela
             </span>
           </span>
         </Link>
 
-        <nav className="flex items-center gap-2 sm:gap-3 text-sm">
+        <nav className="flex items-center gap-1.5 sm:gap-2 text-sm">
           {isOperator && (
             <Link
               href="/operador"
-              className="px-3 py-1.5 rounded-md text-warning font-medium hover:bg-warning/10"
+              className="hidden sm:inline-flex px-3 py-2 rounded-full text-warning font-medium hover:bg-warning/10 transition-colors"
             >
-              Panel voluntarios
+              Voluntarios
             </Link>
           )}
-          <Link
-            href="/nueva"
-            className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90"
-          >
-            Publicar campaña
-          </Link>
+          <CreateCampaignButton isAuthenticated={Boolean(profile)} />
           {profile ? (
-            <form action={signOut} className="flex items-center gap-2">
-              <span className="hidden sm:inline text-muted">
+            <form action={signOut} className="flex items-center gap-2 pl-1">
+              <span className="hidden md:inline text-muted">
                 {profile.display_name}
               </span>
               <button
                 type="submit"
-                className="px-3 py-1.5 rounded-md border border-border hover:bg-background"
+                className="px-3 py-2 rounded-full border border-border hover:bg-card transition-colors"
               >
                 Salir
               </button>
@@ -49,7 +52,7 @@ export async function SiteHeader() {
           ) : (
             <Link
               href="/login"
-              className="px-3 py-1.5 rounded-md border border-border hover:bg-background"
+              className="px-3 py-2 rounded-full hover:bg-card transition-colors"
             >
               Entrar
             </Link>

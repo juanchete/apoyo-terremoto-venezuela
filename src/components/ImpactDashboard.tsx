@@ -6,70 +6,60 @@ interface IImpactDashboardProps {
 }
 
 export function ImpactDashboard({ stats }: IImpactDashboardProps) {
+  const pct = Math.round(stats.progressPct * 100);
+
   return (
     <section
       aria-label="Impacto financiero"
-      className="rounded-2xl border border-border bg-card p-5 sm:p-6 space-y-4"
+      className="rounded-3xl border border-border bg-card/70 p-6 sm:p-8"
     >
-      <div className="flex items-baseline justify-between gap-3 flex-wrap">
-        <h2 className="font-semibold text-lg">Impacto del alivio comunitario</h2>
-        <span className="text-xs text-muted">
-          {stats.campaignCount} campañas activas
-        </span>
-      </div>
+      <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:gap-12">
+        {/* Bloque principal: recaudado + progreso */}
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-accent font-semibold">
+            Impacto del alivio comunitario
+          </p>
+          <div className="mt-3 flex items-end gap-3 flex-wrap">
+            <span className="font-display text-5xl sm:text-6xl leading-none text-trust">
+              {formatMoney(stats.totalRaised)}
+            </span>
+            <span className="text-muted text-sm mb-1.5">recaudados</span>
+          </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <Metric
-          label="Recaudado"
-          value={formatMoney(stats.totalRaised)}
-          tone="trust"
-        />
-        <Metric label="Meta global" value={formatMoney(stats.totalGoal)} />
-        <Metric
-          label="Falta por recaudar"
-          value={formatMoney(stats.gap)}
-          tone="warning"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <div className="h-3 w-full rounded-full bg-background overflow-hidden border border-border">
-          <div
-            className="h-full bg-trust transition-[width] duration-500"
-            style={{ width: `${Math.round(stats.progressPct * 100)}%` }}
-            role="progressbar"
-            aria-valuenow={Math.round(stats.progressPct * 100)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          />
+          <div className="mt-5">
+            <div className="h-2.5 w-full rounded-full bg-background overflow-hidden border border-border">
+              <div
+                className="h-full rounded-full bg-trust transition-[width] duration-700 ease-out"
+                style={{ width: `${pct}%` }}
+                role="progressbar"
+                aria-valuenow={pct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              />
+            </div>
+            <p className="mt-2 text-sm text-muted">
+              <span className="text-foreground font-semibold">{formatPct(stats.progressPct)}</span>{" "}
+              del esfuerzo total · {stats.campaignCount} campañas activas
+            </p>
+          </div>
         </div>
-        <p className="text-xs text-muted">
-          {formatPct(stats.progressPct)} del esfuerzo total cubierto
-        </p>
+
+        {/* Bloque secundario: meta y brecha */}
+        <dl className="grid grid-cols-2 lg:grid-cols-1 gap-5 content-center lg:border-l lg:border-border lg:pl-12">
+          <div>
+            <dt className="text-xs text-muted">Meta global</dt>
+            <dd className="font-display text-2xl mt-0.5">
+              {formatMoney(stats.totalGoal)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted">Falta por recaudar</dt>
+            <dd className="font-display text-2xl mt-0.5 text-accent">
+              {formatMoney(stats.gap)}
+            </dd>
+          </div>
+        </dl>
       </div>
     </section>
-  );
-}
-
-interface IMetricProps {
-  label: string;
-  value: string;
-  tone?: "trust" | "warning";
-}
-
-function Metric({ label, value, tone }: IMetricProps) {
-  const color =
-    tone === "trust"
-      ? "text-trust"
-      : tone === "warning"
-        ? "text-warning"
-        : "text-foreground";
-  return (
-    <div>
-      <p className={`text-xl sm:text-2xl font-bold tabular-nums ${color}`}>
-        {value}
-      </p>
-      <p className="text-xs text-muted">{label}</p>
-    </div>
   );
 }

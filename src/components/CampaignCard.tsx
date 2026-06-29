@@ -13,74 +13,75 @@ export function CampaignCard({ campaign }: ICampaignCardProps) {
   const pct = campaign.collection_pct;
 
   return (
-    <article className="group rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-      <Link href={`/campana/${campaign.id}`} className="block">
-        {campaign.image_url ? (
-          <div className="relative aspect-[16/9] bg-background">
+    <article className="group relative h-full rounded-2xl border border-border bg-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.18)] hover:border-primary/30">
+      <Link href={`/campana/${campaign.id}`} className="flex flex-col h-full">
+        <div className="relative aspect-[16/10] overflow-hidden">
+          {campaign.image_url ? (
             <Image
               src={campaign.image_url}
               alt=""
               fill
               sizes="(max-width: 768px) 100vw, 33vw"
-              className="object-cover"
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
               unoptimized
             />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-primary/12 to-accent/12 text-5xl">
+              {categoryEmoji(campaign.category)}
+            </div>
+          )}
+          <div className="absolute top-3 left-3 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-xs rounded-full bg-background/90 backdrop-blur-sm border border-border px-2.5 py-1 font-medium">
+              {categoryEmoji(campaign.category)} {categoryLabel(campaign.category)}
+            </span>
           </div>
-        ) : (
-          <div className="aspect-[16/9] bg-gradient-to-br from-primary/15 to-trust/15 flex items-center justify-center text-4xl">
-            {categoryEmoji(campaign.category)}
-          </div>
-        )}
-      </Link>
-
-      <div className="p-4 space-y-2 flex flex-col flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs rounded-full bg-background border border-border px-2 py-0.5">
-            {categoryEmoji(campaign.category)} {categoryLabel(campaign.category)}
-          </span>
-          {campaign.is_verified && <VerifiedBadge />}
+          {campaign.is_verified && (
+            <div className="absolute top-3 right-3">
+              <VerifiedBadge />
+            </div>
+          )}
         </div>
 
-        <Link href={`/campana/${campaign.id}`}>
-          <h3 className="font-semibold leading-snug line-clamp-2 group-hover:text-primary">
+        <div className="p-5 flex flex-col flex-1">
+          <h3 className="font-display text-lg leading-snug line-clamp-2 group-hover:text-primary transition-colors">
             {campaign.title}
           </h3>
-        </Link>
 
-        {campaign.goal_amount ? (
-          <div className="space-y-1 pt-1">
-            <div className="h-2 w-full rounded-full bg-background overflow-hidden border border-border">
-              <div
-                className="h-full bg-trust"
-                style={{ width: `${Math.round((pct ?? 0) * 100)}%` }}
-              />
+          {campaign.goal_amount ? (
+            <div className="mt-3 space-y-1.5">
+              <div className="h-1.5 w-full rounded-full bg-background overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-trust"
+                  style={{ width: `${Math.round((pct ?? 0) * 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-sm tabular-nums">
+                <span className="text-trust font-semibold">
+                  {formatMoney(campaign.raised_amount, campaign.currency)}
+                </span>
+                <span className="text-muted">
+                  {pct !== null ? formatPct(pct) : ""} de{" "}
+                  {formatMoney(campaign.goal_amount, campaign.currency)}
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between text-xs text-muted tabular-nums">
-              <span className="text-trust font-medium">
-                {formatMoney(campaign.raised_amount, campaign.currency)}
-              </span>
-              <span>
-                {pct !== null ? formatPct(pct) : ""} de{" "}
-                {formatMoney(campaign.goal_amount, campaign.currency)}
-              </span>
-            </div>
+          ) : (
+            <p className="mt-2 text-sm text-muted line-clamp-2">
+              {campaign.description}
+            </p>
+          )}
+
+          <div className="mt-auto pt-4 flex items-center gap-3 text-xs text-muted">
+            <span>📍 {campaign.region}</span>
+            <span className="ml-auto inline-flex items-center gap-1 text-trust font-medium">
+              ▲ {campaign.trust_count}
+            </span>
+            <span className="inline-flex items-center gap-1 text-distrust font-medium">
+              ▼ {campaign.distrust_count}
+            </span>
           </div>
-        ) : (
-          <p className="text-sm text-muted line-clamp-2">
-            {campaign.description}
-          </p>
-        )}
-
-        <div className="flex items-center gap-3 pt-1 mt-auto text-xs text-muted">
-          <span>📍 {campaign.region}</span>
-          <span className="inline-flex items-center gap-1 text-trust">
-            ▲ {campaign.trust_count}
-          </span>
-          <span className="inline-flex items-center gap-1 text-distrust">
-            ▼ {campaign.distrust_count}
-          </span>
         </div>
-      </div>
+      </Link>
     </article>
   );
 }

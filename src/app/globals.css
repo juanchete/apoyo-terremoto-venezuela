@@ -1,17 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f8fa;
-  --foreground: #16181d;
-  --card: #ffffff;
-  --border: #e4e7ec;
-  --muted: #667085;
-  --primary: #1f6feb;
-  --primary-foreground: #ffffff;
-  --trust: #0f9d58;
-  --distrust: #d93025;
-  --verified: #1d9bf0;
-  --warning: #b54708;
+  /* Neutros cálidos (papel) — nunca blanco/negro puro */
+  --background: #f5f1e8;
+  --foreground: #211d17;
+  --card: #fffdf8;
+  --border: #e6dfd0;
+  --muted: #756c5b;
+
+  /* Acentos: verde confianza + terracota cálida */
+  --primary: #156a4b;
+  --primary-foreground: #fbfaf5;
+  --accent: #c2571e;
+  --trust: #1f7a52;
+  --distrust: #b23a2c;
+  --verified: #2f6f94;
+  --warning: #a8601a;
+  --ring: #156a4b;
 }
 
 @theme inline {
@@ -22,22 +27,31 @@
   --color-muted: var(--muted);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
   --color-trust: var(--trust);
   --color-distrust: var(--distrust);
   --color-verified: var(--verified);
   --color-warning: var(--warning);
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0c0e12;
-    --foreground: #e7e9ee;
-    --card: #15181e;
-    --border: #262b33;
-    --muted: #8b95a5;
-    --primary: #4d8dfb;
-    --verified: #4db5f5;
+    --background: #14120d;
+    --foreground: #ece6d9;
+    --card: #1e1b14;
+    --border: #322c20;
+    --muted: #9a9080;
+    --primary: #4cae86;
+    --primary-foreground: #0c0b08;
+    --accent: #e07a3c;
+    --trust: #4cae86;
+    --distrust: #d9614f;
+    --verified: #6aa6c8;
+    --warning: #d39247;
+    --ring: #4cae86;
   }
 }
 
@@ -45,9 +59,55 @@
   border-color: var(--color-border);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
+  background-color: var(--background);
+  /* Textura sutil cálida: dos lavados radiales, no glassmorphism */
+  background-image:
+    radial-gradient(120% 80% at 100% 0%, color-mix(in oklab, var(--accent) 7%, transparent) 0%, transparent 55%),
+    radial-gradient(90% 70% at 0% 0%, color-mix(in oklab, var(--primary) 6%, transparent) 0%, transparent 50%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv01";
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 22%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+/* Revelado suave en carga */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-rise { animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.animate-fade { animation: fade 0.25s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

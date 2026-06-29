@@ -4,18 +4,19 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+type TMode = "signin" | "signup";
+
 interface IAuthFormProps {
   next: string;
+  initialMode?: TMode;
 }
-
-type TMode = "signin" | "signup";
 
 const fieldClass =
   "w-full rounded-lg border border-border bg-card p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
 
-export function AuthForm({ next }: IAuthFormProps) {
+export function AuthForm({ next, initialMode = "signin" }: IAuthFormProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<TMode>("signin");
+  const [mode, setMode] = useState<TMode>(initialMode);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
