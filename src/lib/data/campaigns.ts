@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { gofundmeKey } from '@/lib/campaign';
+import { getUsdRates, toUsd } from '@/lib/fx';
 import type {
   ICampaignWithStats,
   IDashboardStats,
@@ -6,6 +8,38 @@ import type {
   IVote,
   TNeedCategory,
 } from '@/types';
+
+export interface ICampaignRef {
+  id: string;
+  title: string;
+}
+
+// ¿Ya existe una campaña activa con este mismo enlace de GoFundMe?
+// Filtra en la base por el slug y confirma en memoria con la clave canónica
+// (tolera www, parámetros y barra final). `excludeId` evita falsos positivos
+// al editar la propia campaña.
+export async function findActiveCampaignByLink(
+  donationUrl: string,
+  excludeId?: string,
+): Promise<ICampaignRef | null> {
+  const key = gofundmeKey(donationUrl);
+  if (!key) return null;
+
+  const supabase = await createClient();
+  let query = supabase
+    .from('campaigns')
+    .select('id, title, donation_url')
+    .eq('status', 'active')
+    .ilike('donation_url', `%${key}%`);
+  if (excludeId) query = query.neq('id', excludeId);
+
+  const { data } = await query;
+  const match = (data ?? []).find(
+    (c) => gofundmeKey((c as { donation_url: string | null }).donation_url) === key,
+  ) as { id: string; title: string } | undefined;
+
+  return match ? { id: match.id, title: match.title } : null;
+}
 
 export interface ICampaignFilters {
   region?: string;
@@ -42,14 +76,28 @@ export async function getDashboardStats(): Promise<IDashboardStats> {
 
   const { data, error } = await supabase
     .from('campaigns')
-    .select('goal_amount, raised_amount')
+    .select('goal_amount, raised_amount, currency')
     .eq('status', 'active');
 
   if (error) throw new Error(error.message);
 
-  const rows = (data ?? []) as { goal_amount: number | null; raised_amount: number }[];
-  const totalGoal = rows.reduce((sum, r) => sum + (r.goal_amount ?? 0), 0);
-  const totalRaised = rows.reduce((sum, r) => sum + (r.raised_amount ?? 0), 0);
+  const rows = (data ?? []) as {
+    goal_amount: number | null;
+    raised_amount: number;
+    currency: string | null;
+  }[];
+
+  // Las campañas vienen en distintas monedas (USD, EUR, MXN…). Convertimos
+  // todo a USD para que los totales globales sean comparables.
+  const rates = await getUsdRates();
+  const totalGoal = rows.reduce(
+    (sum, r) => sum + toUsd(r.goal_amount ?? 0, r.currency, rates),
+    0,
+  );
+  const totalRaised = rows.reduce(
+    (sum, r) => sum + toUsd(r.raised_amount, r.currency, rates),
+    0,
+  );
   const gap = Math.max(totalGoal - totalRaised, 0);
   const progressPct = totalGoal > 0 ? Math.min(totalRaised / totalGoal, 1) : 0;
 

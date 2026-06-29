@@ -10,6 +10,14 @@ export function formatMoney(amount: number, currency: string = 'USD'): string {
   }
 }
 
+// Número agrupado sin símbolo de moneda (para paneles donde la moneda se
+// indica una sola vez).
+export function formatNumber(amount: number): string {
+  return new Intl.NumberFormat('es-VE', { maximumFractionDigits: 0 }).format(
+    amount,
+  );
+}
+
 export function formatPct(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
 }

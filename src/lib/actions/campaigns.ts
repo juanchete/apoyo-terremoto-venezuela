@@ -4,10 +4,14 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { analyzeCampaign } from '@/lib/ai/moderation';
+import { findActiveCampaignByLink, type ICampaignRef } from '@/lib/data/campaigns';
+import { resolveGoFundMeUrl } from '@/lib/ingest/gofundme';
 import type { TNeedCategory } from '@/types';
 
 export interface IActionResult {
   error?: string;
+  // Si el enlace ya existe, la campaña publicada (para enlazarla en el aviso).
+  existing?: ICampaignRef;
 }
 
 const VALID_CATEGORIES: readonly TNeedCategory[] = [
@@ -98,6 +102,22 @@ export async function createCampaign(formData: FormData): Promise<IActionResult>
   const parsed = parseCampaignForm(formData);
   if ('error' in parsed) return { error: parsed.error };
 
+  // Resuelve enlaces cortos (gofund.me/…) a la URL canónica antes de guardar.
+  if (parsed.data.donation_url) {
+    parsed.data.donation_url = await resolveGoFundMeUrl(parsed.data.donation_url);
+  }
+
+  // Sin duplicados: una campaña de GoFundMe no se puede publicar dos veces.
+  if (parsed.data.donation_url) {
+    const existing = await findActiveCampaignByLink(parsed.data.donation_url);
+    if (existing) {
+      return {
+        error: `Esta campaña de GoFundMe ya está publicada: «${existing.title}».`,
+        existing,
+      };
+    }
+  }
+
   // Filtro inicial con IA (relevancia + duplicados). Best-effort.
   const { data: existing } = await supabase
     .from('campaigns')
@@ -142,6 +162,25 @@ export async function updateCampaign(
 
   const parsed = parseCampaignForm(formData);
   if ('error' in parsed) return { error: parsed.error };
+
+  // Resuelve enlaces cortos (gofund.me/…) a la URL canónica antes de guardar.
+  if (parsed.data.donation_url) {
+    parsed.data.donation_url = await resolveGoFundMeUrl(parsed.data.donation_url);
+  }
+
+  // Evita que al editar se reapunte a un enlace ya publicado por otra campaña.
+  if (parsed.data.donation_url) {
+    const existing = await findActiveCampaignByLink(
+      parsed.data.donation_url,
+      campaignId,
+    );
+    if (existing) {
+      return {
+        error: `Esa campaña de GoFundMe ya está publicada: «${existing.title}».`,
+        existing,
+      };
+    }
+  }
 
   // RLS garantiza que solo el autor (o un operador) pueda actualizar.
   const { error } = await supabase

@@ -2,9 +2,37 @@ import 'server-only';
 import { generateText } from 'ai';
 import { z } from 'zod';
 import { getAiModel, hasGatewayAuth, parseJsonObject } from '@/lib/ai/client';
+import { isGoFundMe, isGoFundMeShortLink } from '@/lib/campaign';
 import type { IExtractedCampaign } from '@/types';
 
-const isGoFundMe = (url: string): boolean => /gofundme\.com/i.test(url);
+const BROWSER_HEADERS: Readonly<Record<string, string>> = {
+  'User-Agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+  Accept: 'text/html',
+};
+
+// Sigue la redirección de un enlace corto (gofund.me/…) hasta la URL canónica
+// (gofundme.com/f/<slug>). Así el deduplicado y el slug funcionan igual que con
+// el enlace largo. Si falla la red, devuelve la URL original sin romper nada.
+export async function resolveGoFundMeUrl(url: string): Promise<string> {
+  if (!isGoFundMeShortLink(url)) return url;
+  try {
+    const res = await fetch(url, {
+      method: 'HEAD',
+      redirect: 'follow',
+      headers: BROWSER_HEADERS,
+      cache: 'no-store',
+    });
+    const finalUrl = res.url || url;
+    // Limpia parámetros de seguimiento: deja https://www.gofundme.com/f/<slug>.
+    const slug = finalUrl.match(/\/f\/([^/?#]+)/i);
+    return slug
+      ? `https://www.gofundme.com/f/${slug[1].toLowerCase()}`
+      : finalUrl;
+  } catch {
+    return url;
+  }
+}
 
 function decodeEntities(text: string): string {
   return text
@@ -232,17 +260,17 @@ export async function extractFromGoFundMe(
   if (!isGoFundMe(url)) return empty;
 
   let html: string;
+  // URL canónica tras seguir la redirección (relevante para enlaces cortos).
+  let finalUrl = url;
   try {
     const res = await fetch(url, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
-        Accept: 'text/html',
-      },
+      headers: BROWSER_HEADERS,
+      redirect: 'follow',
       // No cachear: los montos cambian.
       cache: 'no-store',
     });
     if (!res.ok) return empty;
+    finalUrl = res.url || url;
     html = await res.text();
   } catch {
     return empty;
@@ -254,7 +282,7 @@ export async function extractFromGoFundMe(
   const ogImage = matchMeta(html, 'og:image');
 
   // 1) Datos estructurados (fuente de verdad para los montos).
-  const structured = fromStructuredData(html, url);
+  const structured = fromStructuredData(html, finalUrl);
 
   // 2) Regex como respaldo de montos.
   const regex = fromRegex(html);

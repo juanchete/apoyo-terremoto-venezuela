@@ -1,11 +1,17 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { createCampaign, updateCampaign } from "@/lib/actions/campaigns";
 import { extractCampaign } from "@/lib/actions/ingest";
 import { VENEZUELA_REGIONS, NEED_CATEGORIES } from "@/lib/constants";
 import { formatMoney, formatPct } from "@/lib/format";
 import type { ICampaign, TNeedCategory } from "@/types";
+
+interface ICampaignRef {
+  id: string;
+  title: string;
+}
 
 function toNumber(raw: string): number {
   const n = Number(raw.replace(/[^0-9.]/g, ""));
@@ -53,6 +59,7 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
   const [form, setForm] = useState<IFormState>(initialState(campaign));
   const [error, setError] = useState<string | null>(null);
   const [extractMsg, setExtractMsg] = useState<string | null>(null);
+  const [duplicate, setDuplicate] = useState<ICampaignRef | null>(null);
   const [isExtracting, startExtract] = useTransition();
   const [isSaving, startSave] = useTransition();
 
@@ -68,8 +75,10 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
   function handleExtract(): void {
     setError(null);
     setExtractMsg(null);
+    setDuplicate(null);
     startExtract(async () => {
       const result = await extractCampaign(form.donation_url);
+      setDuplicate(result.duplicate ?? null);
       if (result.error) {
         setExtractMsg(result.error);
         return;
@@ -91,10 +100,12 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
 
   function handleSubmit(formData: FormData): void {
     setError(null);
+    setDuplicate(null);
     startSave(async () => {
       const result = campaign
         ? await updateCampaign(campaign.id, formData)
         : await createCampaign(formData);
+      if (result?.existing) setDuplicate(result.existing);
       if (result?.error) setError(result.error);
     });
   }
@@ -114,7 +125,7 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
             inputMode="url"
             value={form.donation_url}
             onChange={(e) => set("donation_url", e.target.value)}
-            placeholder="https://gofundme.com/f/..."
+            placeholder="https://gofundme.com/f/… o https://gofund.me/…"
             className={fieldClass}
           />
           <button
@@ -133,6 +144,26 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
         </p>
         {extractMsg && <p className="text-xs text-trust">{extractMsg}</p>}
       </div>
+
+      {duplicate && (
+        <div
+          className="rounded-xl border border-distrust/40 bg-distrust/5 p-3 text-sm"
+          role="alert"
+        >
+          <p className="font-medium text-distrust">
+            Esta campaña de GoFundMe ya está publicada.
+          </p>
+          <p className="text-muted mt-0.5">
+            Para evitar duplicados, no se puede montar dos veces.{" "}
+            <Link
+              href={`/campana/${duplicate.id}`}
+              className="text-primary underline underline-offset-2"
+            >
+              Ver «{duplicate.title}»
+            </Link>
+          </p>
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <label htmlFor="title" className="block text-sm font-medium">

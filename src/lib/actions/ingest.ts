@@ -1,21 +1,32 @@
 'use server';
 
-import { extractFromGoFundMe } from '@/lib/ingest/gofundme';
+import { extractFromGoFundMe, resolveGoFundMeUrl } from '@/lib/ingest/gofundme';
+import { findActiveCampaignByLink, type ICampaignRef } from '@/lib/data/campaigns';
+import { isGoFundMe } from '@/lib/campaign';
 import type { IExtractedCampaign } from '@/types';
 
 export interface IExtractResult {
   data?: IExtractedCampaign;
   error?: string;
+  // Aviso temprano: ya hay una campaña activa con este enlace.
+  duplicate?: ICampaignRef;
 }
 
 // Llamada desde el formulario al pegar un enlace de GoFundMe.
 export async function extractCampaign(url: string): Promise<IExtractResult> {
   const trimmed = url.trim();
   if (!trimmed) return { error: 'Pega un enlace primero.' };
-  if (!/gofundme\.com/i.test(trimmed))
+  if (!isGoFundMe(trimmed))
     return { error: 'Por ahora solo se puede autocompletar desde enlaces de GoFundMe.' };
 
-  const data = await extractFromGoFundMe(trimmed);
+  // Resuelve enlaces cortos (gofund.me/…) a su URL canónica antes de comparar.
+  const canonical = await resolveGoFundMeUrl(trimmed);
+
+  // Si ya está publicada, avisa de una vez (no bloquea el autocompletado).
+  const duplicate =
+    (await findActiveCampaignByLink(canonical)) ?? undefined;
+
+  const data = await extractFromGoFundMe(canonical);
 
   const gotSomething =
     data.title || data.description || data.image_url || data.goal_amount;
@@ -23,7 +34,8 @@ export async function extractCampaign(url: string): Promise<IExtractResult> {
     return {
       error:
         'No se pudo leer la página (GoFundMe pudo bloquearla). Completa los datos a mano.',
+      duplicate,
     };
 
-  return { data };
+  return { data, duplicate };
 }

@@ -28,6 +28,16 @@ export default async function Home({ searchParams }: IHomeProps) {
     getCurrentProfile(),
   ]);
 
+  const hasFilter = Boolean(region || category || verifiedOnly);
+  const shown = campaigns.length;
+  const countLabel = hasFilter
+    ? `Mostrando ${shown} de ${stats.campaignCount} ${
+        stats.campaignCount === 1 ? "campaña" : "campañas"
+      }`
+    : `${stats.campaignCount} ${
+        stats.campaignCount === 1 ? "campaña publicada" : "campañas publicadas"
+      }`;
+
   return (
     <div className="space-y-10">
       <section className="max-w-3xl animate-rise">
@@ -105,6 +115,12 @@ export default async function Home({ searchParams }: IHomeProps) {
           Filtrar
         </button>
       </form>
+
+      <div className="flex items-baseline justify-between gap-3 -mb-4">
+        <p className="text-sm text-muted" aria-live="polite">
+          <span className="font-semibold text-foreground">{countLabel}</span>
+        </p>
+      </div>
 
       {campaigns.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-border py-16 px-6 text-center space-y-4">
