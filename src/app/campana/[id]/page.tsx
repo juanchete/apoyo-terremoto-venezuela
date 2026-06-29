@@ -1,0 +1,161 @@
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  getCampaignById,
+  getMyVote,
+  hasReported,
+} from "@/lib/data/campaigns";
+import { getCurrentProfile } from "@/lib/data/auth";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { TrustVoteWidget } from "@/components/TrustVoteWidget";
+import { OperatorActionBar } from "@/components/OperatorActionBar";
+import { AuthorControls } from "@/components/AuthorControls";
+import { ReportButton } from "@/components/ReportButton";
+import { categoryEmoji, categoryLabel } from "@/lib/constants";
+import { formatMoney, formatPct } from "@/lib/format";
+
+interface ICampaignPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function CampaignPage({ params }: ICampaignPageProps) {
+  const { id } = await params;
+
+  const [campaign, profile] = await Promise.all([
+    getCampaignById(id),
+    getCurrentProfile(),
+  ]);
+
+  if (!campaign) notFound();
+
+  const [myVote, reported] = await Promise.all([
+    getMyVote(id),
+    hasReported(id),
+  ]);
+
+  const isOperator = profile?.role === "operator";
+  const isAuthor = profile?.id === campaign.author_id;
+  const pct = campaign.collection_pct;
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <Link href="/" className="text-sm text-muted hover:text-foreground">
+        ← Volver a campañas
+      </Link>
+
+      {campaign.status === "removed" && (
+        <div className="rounded-lg border border-distrust/40 bg-distrust/5 p-3 text-sm text-distrust">
+          Esta publicación fue bajada por el equipo de voluntarios y no es
+          visible públicamente.
+        </div>
+      )}
+
+      <article className="space-y-5">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm rounded-full bg-card border border-border px-2 py-0.5">
+              {categoryEmoji(campaign.category)} {categoryLabel(campaign.category)}
+            </span>
+            <span className="text-sm text-muted">📍 {campaign.region}</span>
+            {campaign.is_verified && <VerifiedBadge size="md" />}
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold">{campaign.title}</h1>
+          <p className="text-sm text-muted">
+            Publicada por {campaign.author_name}
+          </p>
+        </div>
+
+        {campaign.image_url && (
+          <div className="relative aspect-[16/9] rounded-xl overflow-hidden border border-border">
+            <Image
+              src={campaign.image_url}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-cover"
+              unoptimized
+            />
+          </div>
+        )}
+
+        {campaign.goal_amount ? (
+          <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+            <div className="h-3 w-full rounded-full bg-background overflow-hidden border border-border">
+              <div
+                className="h-full bg-trust transition-[width] duration-500"
+                style={{ width: `${Math.round((pct ?? 0) * 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-baseline tabular-nums">
+              <span className="text-lg font-bold text-trust">
+                {formatMoney(campaign.raised_amount, campaign.currency)}
+              </span>
+              <span className="text-sm text-muted">
+                {pct !== null ? `${formatPct(pct)} de ` : ""}
+                {formatMoney(campaign.goal_amount, campaign.currency)}
+              </span>
+            </div>
+          </div>
+        ) : null}
+
+        <p className="whitespace-pre-wrap leading-relaxed">
+          {campaign.description}
+        </p>
+
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <h2 className="font-semibold">Cómo donar</h2>
+          {campaign.donation_url && (
+            <a
+              href={campaign.donation_url}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="inline-block rounded-lg bg-primary text-primary-foreground px-5 py-2.5 font-medium hover:opacity-90"
+            >
+              Donar en GoFundMe ↗
+            </a>
+          )}
+          {campaign.payment_details && (
+            <div className="text-sm">
+              <p className="text-muted mb-1">Datos de pago alternativos:</p>
+              <p className="whitespace-pre-wrap break-words font-mono bg-background rounded-md p-3 border border-border">
+                {campaign.payment_details}
+              </p>
+            </div>
+          )}
+          <p className="text-xs text-muted">
+            ⚠️ Esta plataforma no procesa pagos. Verifica la campaña antes de
+            enviar dinero.
+          </p>
+        </div>
+
+        <TrustVoteWidget
+          campaignId={campaign.id}
+          trustCount={campaign.trust_count}
+          distrustCount={campaign.distrust_count}
+          myVote={myVote?.value ?? null}
+          isAuthenticated={Boolean(profile)}
+        />
+
+        <ReportButton
+          campaignId={campaign.id}
+          isAuthenticated={Boolean(profile)}
+          alreadyReported={reported}
+        />
+
+        {isAuthor && <AuthorControls campaignId={campaign.id} />}
+
+        {isOperator && (
+          <OperatorActionBar
+            campaignId={campaign.id}
+            isVerified={campaign.is_verified}
+            status={campaign.status}
+            aiStatus={campaign.ai_status}
+            aiNotes={campaign.ai_notes}
+            openReports={campaign.open_reports}
+          />
+        )}
+      </article>
+    </div>
+  );
+}

@@ -1,65 +1,120 @@
-import Image from "next/image";
+import Link from "next/link";
+import { getCampaigns, getDashboardStats } from "@/lib/data/campaigns";
+import { CampaignCard } from "@/components/CampaignCard";
+import { ImpactDashboard } from "@/components/ImpactDashboard";
+import { VENEZUELA_REGIONS, NEED_CATEGORIES } from "@/lib/constants";
+import type { TNeedCategory } from "@/types";
 
-export default function Home() {
+interface IHomeProps {
+  searchParams: Promise<{
+    region?: string;
+    categoria?: string;
+    verificadas?: string;
+  }>;
+}
+
+export default async function Home({ searchParams }: IHomeProps) {
+  const params = await searchParams;
+  const region = params.region;
+  const category = NEED_CATEGORIES.some((c) => c.value === params.categoria)
+    ? (params.categoria as TNeedCategory)
+    : undefined;
+  const verifiedOnly = params.verificadas === "1";
+
+  const [campaigns, stats] = await Promise.all([
+    getCampaigns({ region, category, verifiedOnly }),
+    getDashboardStats(),
+  ]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="space-y-8">
+      <section className="text-center space-y-3 py-2">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          Ayuda directa a las familias del terremoto
+        </h1>
+        <p className="text-muted max-w-2xl mx-auto">
+          Campañas de GoFundMe centralizadas y verificadas. Apoya directo a las
+          familias —sin intermediarios—, priorizando a las que están más lejos
+          de su meta. <strong>Verifica siempre antes de donar.</strong>
+        </p>
+      </section>
+
+      <ImpactDashboard stats={stats} />
+
+      <form className="flex flex-wrap items-end gap-3 justify-center">
+        <div className="space-y-1">
+          <label htmlFor="categoria" className="block text-xs text-muted">
+            Categoría
+          </label>
+          <select
+            id="categoria"
+            name="categoria"
+            defaultValue={category ?? ""}
+            className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
+          >
+            <option value="">Todas</option>
+            {NEED_CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.emoji} {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="region" className="block text-xs text-muted">
+            Región
+          </label>
+          <select
+            id="region"
+            name="region"
+            defaultValue={region ?? ""}
+            className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
+          >
+            <option value="">Todas</option>
+            {VENEZUELA_REGIONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
+        <label className="flex items-center gap-2 text-sm pb-2">
+          <input
+            type="checkbox"
+            name="verificadas"
+            value="1"
+            defaultChecked={verifiedOnly}
+            className="size-4"
+          />
+          Solo verificadas
+        </label>
+        <button
+          type="submit"
+          className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-card"
+        >
+          Filtrar
+        </button>
+      </form>
+
+      {campaigns.length === 0 ? (
+        <div className="text-center py-16 space-y-3">
+          <p className="text-muted">
+            No hay campañas con estos filtros todavía.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/nueva"
+            className="inline-block rounded-lg bg-primary text-primary-foreground px-5 py-2.5 font-medium"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Publicar la primera campaña
+          </Link>
         </div>
-      </main>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {campaigns.map((campaign) => (
+            <CampaignCard key={campaign.id} campaign={campaign} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
