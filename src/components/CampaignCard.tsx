@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { GoFundMeBadge } from "@/components/GoFundMeBadge";
-import { categoryEmoji, categoryLabel } from "@/lib/constants";
+import { categoryEmoji, categoryLabel, tagEmoji, tagLabel } from "@/lib/constants";
 import { isGoFundMe } from "@/lib/campaign";
 import { formatMoney, formatPct } from "@/lib/format";
 import type { ICampaignWithStats } from "@/types";
@@ -49,6 +49,19 @@ export function CampaignCard({ campaign }: ICampaignCardProps) {
           <h3 className="font-display text-lg leading-snug line-clamp-2 group-hover:text-primary transition-colors">
             {campaign.title}
           </h3>
+
+          {campaign.tags.length > 0 && (
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {campaign.tags.slice(0, 4).map((tag) => (
+                <li
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-full bg-background border border-border px-2 py-0.5 text-[11px] text-muted"
+                >
+                  <span aria-hidden>{tagEmoji(tag)}</span> {tagLabel(tag)}
+                </li>
+              ))}
+            </ul>
+          )}
 
           {campaign.goal_amount ? (
             <div className="mt-3 space-y-1.5">

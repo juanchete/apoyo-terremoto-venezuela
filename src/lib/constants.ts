@@ -1,4 +1,4 @@
-import type { TNeedCategory, TUserRole } from '@/types';
+import type { TCampaignTag, TNeedCategory, TUserRole } from '@/types';
 
 // Roles del sistema. Jerarquía: user < operator < super_admin.
 export interface IRoleMeta {
@@ -60,12 +60,11 @@ export interface INeedCategoryMeta {
   emoji: string;
 }
 
+// Tres grandes categorías de necesidad. Una sola por campaña (eje principal).
 export const NEED_CATEGORIES: readonly INeedCategoryMeta[] = [
-  { value: 'medical', label: 'Gastos Médicos', emoji: '🏥' },
-  { value: 'funeral', label: 'Gastos Funerarios', emoji: '🕯️' },
-  { value: 'recovery', label: 'Recuperación / Vivienda', emoji: '🏠' },
-  { value: 'children', label: 'Enfoque Infantil', emoji: '🧒' },
-  { value: 'other', label: 'Otros', emoji: '🤝' },
+  { value: 'medical', label: 'Gastos médicos', emoji: '🏥' },
+  { value: 'funeral', label: 'Gastos funerarios', emoji: '🕯️' },
+  { value: 'economic_loss', label: 'Pérdidas económicas', emoji: '🏚️' },
 ] as const;
 
 export function categoryLabel(value: TNeedCategory): string {
@@ -74,6 +73,42 @@ export function categoryLabel(value: TNeedCategory): string {
 
 export function categoryEmoji(value: TNeedCategory): string {
   return NEED_CATEGORIES.find((c) => c.value === value)?.emoji ?? '🤝';
+}
+
+// Etiquetas transversales (eje múltiple). Subclasifican la campaña dentro de
+// cualquier categoría: p. ej. un servicio funerario puede ser de un niño o de
+// un abuelo. Lista curada para mantener consistencia y facilitar el filtrado;
+// para sumar una etiqueta nueva basta con agregarla aquí (y a TCampaignTag).
+export interface ICampaignTagMeta {
+  value: TCampaignTag;
+  label: string;
+  emoji: string;
+}
+
+export const CAMPAIGN_TAGS: readonly ICampaignTagMeta[] = [
+  { value: 'ninos', label: 'Niños', emoji: '🧒' },
+  { value: 'madre', label: 'Madre', emoji: '🤱' },
+  { value: 'abuelo', label: 'Adulto mayor', emoji: '👴' },
+  { value: 'mascota', label: 'Mascotas', emoji: '🐾' },
+  { value: 'protesis', label: 'Prótesis', emoji: '🦿' },
+  { value: 'diabetes', label: 'Diabetes', emoji: '💉' },
+  { value: 'embarazo', label: 'Embarazo', emoji: '🤰' },
+  { value: 'discapacidad', label: 'Discapacidad', emoji: '♿' },
+  { value: 'cancer', label: 'Cáncer', emoji: '🎗️' },
+] as const;
+
+const TAG_VALUES: readonly TCampaignTag[] = CAMPAIGN_TAGS.map((t) => t.value);
+
+export function isCampaignTag(value: string): value is TCampaignTag {
+  return (TAG_VALUES as readonly string[]).includes(value);
+}
+
+export function tagLabel(value: TCampaignTag): string {
+  return CAMPAIGN_TAGS.find((t) => t.value === value)?.label ?? value;
+}
+
+export function tagEmoji(value: TCampaignTag): string {
+  return CAMPAIGN_TAGS.find((t) => t.value === value)?.emoji ?? '🏷️';
 }
 
 // Botón de soporte por WhatsApp para guiar a las familias (PRD, sección 4).

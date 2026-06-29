@@ -6,6 +6,7 @@ import type {
   IDashboardStats,
   IReportWithContext,
   IVote,
+  TCampaignTag,
   TNeedCategory,
 } from '@/types';
 
@@ -44,7 +45,11 @@ export async function findActiveCampaignByLink(
 export interface ICampaignFilters {
   region?: string;
   category?: TNeedCategory;
+  // Coincide con cualquiera de las etiquetas indicadas (eje transversal).
+  tags?: TCampaignTag[];
   verifiedOnly?: boolean;
+  // Solo campañas alojadas en GoFundMe (eje independiente).
+  gofundmeOnly?: boolean;
 }
 
 export async function getCampaigns(
@@ -63,7 +68,14 @@ export async function getCampaigns(
 
   if (filters.region) query = query.eq('region', filters.region);
   if (filters.category) query = query.eq('category', filters.category);
+  if (filters.tags && filters.tags.length > 0)
+    query = query.overlaps('tags', filters.tags);
   if (filters.verifiedOnly) query = query.eq('is_verified', true);
+  // Mismo criterio que isGoFundMe(): dominio gofundme.com o enlace gofund.me.
+  if (filters.gofundmeOnly)
+    query = query.or(
+      'donation_url.ilike.%gofundme.com%,donation_url.ilike.%gofund.me%',
+    );
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);

@@ -13,7 +13,7 @@ import { TrustVoteWidget } from "@/components/TrustVoteWidget";
 import { OperatorActionBar } from "@/components/OperatorActionBar";
 import { AuthorControls } from "@/components/AuthorControls";
 import { ReportButton } from "@/components/ReportButton";
-import { categoryEmoji, categoryLabel } from "@/lib/constants";
+import { categoryEmoji, categoryLabel, tagEmoji, tagLabel } from "@/lib/constants";
 import { isGoFundMe, collectionPct } from "@/lib/campaign";
 import { refreshAmountsIfStale } from "@/lib/ingest/sync";
 import {
@@ -87,6 +87,18 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
             {fromGoFundMe && <GoFundMeBadge size="md" />}
             {campaign.is_verified && <VerifiedBadge size="md" />}
           </div>
+          {campaign.tags.length > 0 && (
+            <ul className="flex flex-wrap gap-1.5">
+              {campaign.tags.map((tag) => (
+                <li
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded-full bg-card border border-border px-2.5 py-0.5 text-xs"
+                >
+                  <span aria-hidden>{tagEmoji(tag)}</span> {tagLabel(tag)}
+                </li>
+              ))}
+            </ul>
+          )}
           <h1 className="text-2xl sm:text-3xl font-bold">{campaign.title}</h1>
           <p className="text-sm text-muted">
             Publicada por {campaign.author_name}

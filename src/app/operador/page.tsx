@@ -5,7 +5,7 @@ import { getOperatorQueue, getOpenReports } from "@/lib/data/campaigns";
 import { OperatorActionBar } from "@/components/OperatorActionBar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { AlertBadges } from "@/components/AlertBadges";
-import { categoryEmoji, categoryLabel } from "@/lib/constants";
+import { categoryEmoji, categoryLabel, tagLabel } from "@/lib/constants";
 import { getUsdRates } from "@/lib/fx";
 import {
   buildAlertContext,
@@ -181,6 +181,11 @@ function QueueSection({ title, campaigns, alertsByCampaign }: IQueueSectionProps
                   {campaign.author_name} · ▲{campaign.trust_count} ▼
                   {campaign.distrust_count}
                 </p>
+                {campaign.tags.length > 0 && (
+                  <p className="text-xs text-muted mt-0.5">
+                    🏷️ {campaign.tags.map(tagLabel).join(" · ")}
+                  </p>
+                )}
               </div>
               {campaign.is_verified && <VerifiedBadge />}
             </div>

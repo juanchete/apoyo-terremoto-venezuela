@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/server';
 import { analyzeCampaign } from '@/lib/ai/moderation';
 import { findActiveCampaignByLink, type ICampaignRef } from '@/lib/data/campaigns';
 import { resolveGoFundMeUrl } from '@/lib/ingest/gofundme';
-import type { TNeedCategory } from '@/types';
+import { NEED_CATEGORIES, isCampaignTag } from '@/lib/constants';
+import type { TCampaignTag, TNeedCategory } from '@/types';
 
 export interface IActionResult {
   error?: string;
@@ -14,19 +15,17 @@ export interface IActionResult {
   existing?: ICampaignRef;
 }
 
-const VALID_CATEGORIES: readonly TNeedCategory[] = [
-  'medical',
-  'funeral',
-  'recovery',
-  'children',
-  'other',
-];
+// Lista blanca derivada de la única fuente de verdad de categorías.
+const VALID_CATEGORIES: readonly TNeedCategory[] = NEED_CATEGORIES.map(
+  (c) => c.value,
+);
 
 interface IParsedCampaign {
   title: string;
   description: string;
   region: string;
   category: TNeedCategory;
+  tags: TCampaignTag[];
   donation_url: string | null;
   payment_details: string | null;
   image_url: string | null;
@@ -55,6 +54,15 @@ function parseCampaignForm(
   const description = String(formData.get('description') ?? '').trim();
   const region = String(formData.get('region') ?? '').trim();
   const category = String(formData.get('category') ?? '') as TNeedCategory;
+  // Tags: solo se aceptan los de la lista curada; se descartan duplicados.
+  const tags = Array.from(
+    new Set(
+      formData
+        .getAll('tags')
+        .map((t) => String(t))
+        .filter(isCampaignTag),
+    ),
+  );
   const donation_url = normalizeUrl(String(formData.get('donation_url') ?? ''));
   const payment_details =
     String(formData.get('payment_details') ?? '').trim() || null;
@@ -81,6 +89,7 @@ function parseCampaignForm(
       description,
       region,
       category,
+      tags,
       donation_url,
       payment_details,
       image_url,

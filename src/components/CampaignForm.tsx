@@ -4,9 +4,9 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { createCampaign, updateCampaign } from "@/lib/actions/campaigns";
 import { extractCampaign } from "@/lib/actions/ingest";
-import { VENEZUELA_REGIONS, NEED_CATEGORIES } from "@/lib/constants";
+import { VENEZUELA_REGIONS, NEED_CATEGORIES, CAMPAIGN_TAGS } from "@/lib/constants";
 import { formatMoney, formatPct } from "@/lib/format";
-import type { ICampaign, TNeedCategory } from "@/types";
+import type { ICampaign, TCampaignTag, TNeedCategory } from "@/types";
 
 interface ICampaignRef {
   id: string;
@@ -27,6 +27,7 @@ interface IFormState {
   title: string;
   region: string;
   category: TNeedCategory | "";
+  tags: TCampaignTag[];
   description: string;
   payment_details: string;
   image_url: string;
@@ -48,6 +49,7 @@ function initialState(campaign?: ICampaign): IFormState {
     title: campaign?.title ?? "",
     region: campaign?.region ?? "",
     category: campaign?.category ?? "",
+    tags: campaign?.tags ?? [],
     description: campaign?.description ?? "",
     payment_details: campaign?.payment_details ?? "",
     image_url: campaign?.image_url ?? "",
@@ -78,6 +80,15 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
 
   function set<K extends keyof IFormState>(key: K, value: IFormState[K]): void {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function toggleTag(tag: TCampaignTag): void {
+    setForm((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter((t) => t !== tag)
+        : [...prev.tags, tag],
+    }));
   }
 
   function handleExtract(): void {
@@ -243,6 +254,43 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
           </select>
         </div>
       </div>
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">
+          Etiquetas{" "}
+          <span className="text-muted font-normal">
+            (opcional — subclasifican la campaña)
+          </span>
+        </legend>
+        <p className="text-xs text-muted">
+          Marca las que apliquen. Ayudan a quien busca un caso específico (p.
+          ej. servicios funerarios de un niño o de un adulto mayor).
+        </p>
+        {/* Viajan en el envío como múltiples campos name="tags". */}
+        {form.tags.map((tag) => (
+          <input key={tag} type="hidden" name="tags" value={tag} />
+        ))}
+        <div className="flex flex-wrap gap-2">
+          {CAMPAIGN_TAGS.map((t) => {
+            const active = form.tags.includes(t.value);
+            return (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => toggleTag(t.value)}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                  active
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border bg-card text-muted hover:border-primary/50"
+                }`}
+              >
+                <span aria-hidden>{t.emoji}</span> {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
 
       <div className="space-y-1.5">
         <label htmlFor="description" className="block text-sm font-medium">

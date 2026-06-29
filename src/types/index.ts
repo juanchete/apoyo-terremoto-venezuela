@@ -1,12 +1,19 @@
 export type TUserRole = 'user' | 'operator' | 'super_admin';
 export type TCampaignStatus = 'active' | 'removed';
 export type TVoteValue = 'trust' | 'distrust';
-export type TNeedCategory =
-  | 'medical'
-  | 'funeral'
-  | 'recovery'
-  | 'children'
-  | 'other';
+// Categoría principal de la campaña (necesidad dominante). Eje único.
+export type TNeedCategory = 'medical' | 'funeral' | 'economic_loss';
+// Etiquetas transversales para subclasificar (eje múltiple, curado).
+export type TCampaignTag =
+  | 'ninos'
+  | 'madre'
+  | 'abuelo'
+  | 'mascota'
+  | 'protesis'
+  | 'diabetes'
+  | 'embarazo'
+  | 'discapacidad'
+  | 'cancer';
 export type TAiStatus = 'pending' | 'relevant' | 'flagged' | 'error';
 export type TReportStatus = 'open' | 'reviewed';
 
@@ -35,6 +42,7 @@ export interface ICampaign {
   payment_details: string | null;
   region: string;
   category: TNeedCategory;
+  tags: TCampaignTag[];
   image_url: string | null;
   goal_amount: number | null;
   raised_amount: number;
