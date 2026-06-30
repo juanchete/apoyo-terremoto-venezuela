@@ -32,6 +32,7 @@ interface IParsedCampaign {
   goal_amount: number | null;
   raised_amount: number;
   currency: string;
+  gofundme_created_at: string | null;
 }
 
 function normalizeUrl(raw: string): string | null {
@@ -45,6 +46,14 @@ function parseAmount(raw: string): number | null {
   if (!cleaned) return null;
   const value = Number(cleaned);
   return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+// Valida que el valor sea una fecha ISO razonable; si no, null.
+function parseIsoDate(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const ts = Date.parse(trimmed);
+  return Number.isNaN(ts) ? null : new Date(ts).toISOString();
 }
 
 function parseCampaignForm(
@@ -73,6 +82,9 @@ function parseCampaignForm(
   const currency = (String(formData.get('currency') ?? 'USD').trim() || 'USD')
     .toUpperCase()
     .slice(0, 3);
+  const gofundme_created_at = parseIsoDate(
+    String(formData.get('gofundme_created_at') ?? ''),
+  );
 
   if (title.length < 5) return { error: 'El título debe tener al menos 5 caracteres.' };
   if (description.length < 20)
@@ -96,6 +108,7 @@ function parseCampaignForm(
       goal_amount,
       raised_amount,
       currency,
+      gofundme_created_at,
     },
   };
 }
