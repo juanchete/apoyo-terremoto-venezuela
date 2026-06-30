@@ -59,6 +59,8 @@ export interface ICampaign {
   ai_status: TAiStatus;
   ai_notes: string | null;
   last_synced_at: string | null;
+  // Fecha real de publicación en GoFundMe (null si manual o aún sin scrapear).
+  gofundme_created_at: string | null;
   created_at: string;
 }
 
@@ -66,6 +68,8 @@ export interface ICampaignWithStats extends ICampaign {
   author_name: string;
   // Nombre del voluntario que otorgó el sello (null si no está verificada).
   verified_by_name: string | null;
+  // coalesce(gofundme_created_at, created_at): fecha para tag/filtro de antigüedad.
+  published_at: string;
   trust_count: number;
   distrust_count: number;
   total_votes: number;
@@ -110,4 +114,6 @@ export interface IExtractedCampaign {
   goal_amount: number | null;
   raised_amount: number | null;
   currency: string | null;
+  // Fecha real de publicación en GoFundMe (ISO); null si no se pudo leer.
+  gofundme_created_at: string | null;
 }

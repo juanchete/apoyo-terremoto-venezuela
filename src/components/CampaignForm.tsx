@@ -38,6 +38,8 @@ interface IFormState {
   // el usuario). Se manda oculto para detectar manipulación posterior.
   ai_goal_amount: string;
   ai_raised_amount: string;
+  // Fecha real de GoFundMe leída al autocompletar (oculta; no editable).
+  gofundme_created_at: string;
 }
 
 const fieldClass =
@@ -61,6 +63,7 @@ function initialState(campaign?: ICampaign): IFormState {
       campaign?.ai_goal_amount != null ? String(campaign.ai_goal_amount) : "",
     ai_raised_amount:
       campaign?.ai_raised_amount != null ? String(campaign.ai_raised_amount) : "",
+    gofundme_created_at: campaign?.gofundme_created_at ?? "",
   };
 }
 
@@ -117,6 +120,7 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
           d.goal_amount != null ? String(d.goal_amount) : prev.ai_goal_amount,
         ai_raised_amount:
           d.raised_amount != null ? String(d.raised_amount) : prev.ai_raised_amount,
+        gofundme_created_at: d.gofundme_created_at ?? prev.gofundme_created_at,
       }));
       setExtractMsg("Datos autocompletados. Revísalos y completa lo que falte.");
     });
@@ -301,7 +305,7 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
           name="description"
           required
           minLength={20}
-          maxLength={5000}
+          maxLength={20000}
           rows={6}
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
@@ -317,6 +321,11 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
           type="hidden"
           name="ai_raised_amount"
           value={form.ai_raised_amount}
+        />
+        <input
+          type="hidden"
+          name="gofundme_created_at"
+          value={form.gofundme_created_at}
         />
         <div>
           <p className="text-sm font-medium">Meta y recaudado</p>

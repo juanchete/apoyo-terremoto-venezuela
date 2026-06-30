@@ -5,6 +5,7 @@ import { getOperatorQueue, getOpenReports } from "@/lib/data/campaigns";
 import { OperatorActionBar } from "@/components/OperatorActionBar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { AlertBadges } from "@/components/AlertBadges";
+import { BackfillDatesButton } from "@/components/BackfillDatesButton";
 import { categoryEmoji, categoryLabel, tagLabel } from "@/lib/constants";
 import { getUsdRates } from "@/lib/fx";
 import {
@@ -59,14 +60,17 @@ export default async function OperadorPage() {
       <header className="space-y-1">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold">Panel de voluntarios</h1>
-          {isSuperAdmin && (
-            <Link
-              href="/operador/equipo"
-              className="shrink-0 rounded-full border border-border px-3 py-1.5 text-sm font-medium hover:bg-card"
-            >
-              Equipo
-            </Link>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            <BackfillDatesButton />
+            {isSuperAdmin && (
+              <Link
+                href="/operador/equipo"
+                className="rounded-full border border-border px-3 py-1.5 text-sm font-medium hover:bg-card"
+              >
+                Equipo
+              </Link>
+            )}
+          </div>
         </div>
         <p className="text-sm text-muted">
           Revisa, verifica y modera las campañas. Las marcadas por la IA o

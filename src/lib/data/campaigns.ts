@@ -50,6 +50,8 @@ export interface ICampaignFilters {
   verifiedOnly?: boolean;
   // Solo campañas alojadas en GoFundMe (eje independiente).
   gofundmeOnly?: boolean;
+  // Solo campañas publicadas hace MÁS de N horas (descarta recién creadas).
+  minAgeHours?: number;
 }
 
 export async function getCampaigns(
@@ -76,6 +78,13 @@ export async function getCampaigns(
     query = query.or(
       'donation_url.ilike.%gofundme.com%,donation_url.ilike.%gofund.me%',
     );
+
+  if (filters.minAgeHours && filters.minAgeHours > 0) {
+    const cutoff = new Date(
+      Date.now() - filters.minAgeHours * 3600 * 1000,
+    ).toISOString();
+    query = query.lte('published_at', cutoff);
+  }
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);

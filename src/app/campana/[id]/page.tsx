@@ -21,6 +21,7 @@ import {
   formatMoney,
   formatPct,
   formatRelativeTime,
+  formatCampaignAge,
 } from "@/lib/format";
 
 interface ICampaignPageProps {
@@ -46,6 +47,7 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
     profile?.role === "operator" || profile?.role === "super_admin";
   const isAuthor = profile?.id === campaign.author_id;
   const fromGoFundMe = isGoFundMe(campaign.donation_url);
+  const publishedAge = formatCampaignAge(campaign.published_at);
 
   // Refresca los montos desde GoFundMe si el dato está viejo (>30 min).
   // Best-effort: si no hay nada que actualizar, se usan los valores guardados.
@@ -102,6 +104,7 @@ export default async function CampaignPage({ params }: ICampaignPageProps) {
           <h1 className="text-2xl sm:text-3xl font-bold">{campaign.title}</h1>
           <p className="text-sm text-muted">
             Publicada por {campaign.author_name}
+            {publishedAge ? ` · 🕐 ${publishedAge}` : ""}
           </p>
           {campaign.is_verified && verifiedDate && (
             <p className="text-xs text-verified">

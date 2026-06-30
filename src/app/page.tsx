@@ -18,6 +18,7 @@ interface IHomeProps {
     tag?: string | string[];
     verificadas?: string;
     gofundme?: string;
+    antiguedad?: string;
   }>;
 }
 
@@ -33,16 +34,19 @@ export default async function Home({ searchParams }: IHomeProps) {
     .filter(isCampaignTag);
   const verifiedOnly = params.verificadas === "1";
   const gofundmeOnly = params.gofundme === "1";
+  const AGE_HOURS: Record<string, number> = { "1h": 1, "1d": 24, "1w": 168 };
+  const ageKey = params.antiguedad ?? "";
+  const minAgeHours = AGE_HOURS[ageKey];
 
   const [campaigns, stats, profile] = await Promise.all([
-    getCampaigns({ region, category, tags, verifiedOnly, gofundmeOnly }),
+    getCampaigns({ region, category, tags, verifiedOnly, gofundmeOnly, minAgeHours }),
     getDashboardStats(),
     getCurrentProfile(),
   ]);
 
   const selectedTags = new Set<TCampaignTag>(tags);
   const hasFilter = Boolean(
-    region || category || tags.length > 0 || verifiedOnly || gofundmeOnly,
+    region || category || tags.length > 0 || verifiedOnly || gofundmeOnly || minAgeHours,
   );
   const shown = campaigns.length;
   const countLabel = hasFilter
@@ -111,6 +115,22 @@ export default async function Home({ searchParams }: IHomeProps) {
                 {r}
               </option>
             ))}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="antiguedad" className="block text-xs text-muted font-medium">
+            Publicadas
+          </label>
+          <select
+            id="antiguedad"
+            name="antiguedad"
+            defaultValue={ageKey}
+            className="rounded-full border border-border bg-card px-4 py-2 text-sm hover:border-primary/50 transition-colors"
+          >
+            <option value="">En cualquier momento</option>
+            <option value="1h">Hace más de 1 hora</option>
+            <option value="1d">Hace más de 1 día</option>
+            <option value="1w">Hace más de 1 semana</option>
           </select>
         </div>
         <label className="flex items-center gap-2 text-sm pb-2 cursor-pointer">
@@ -191,7 +211,7 @@ export default async function Home({ searchParams }: IHomeProps) {
               className="animate-rise"
               style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
             >
-              <CampaignCard campaign={campaign} />
+              <CampaignCard campaign={campaign} isAuthenticated={Boolean(profile)} />
             </div>
           ))}
         </div>
