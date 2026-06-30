@@ -211,7 +211,7 @@ export default async function Home({ searchParams }: IHomeProps) {
               className="animate-rise"
               style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
             >
-              <CampaignCard campaign={campaign} />
+              <CampaignCard campaign={campaign} isAuthenticated={Boolean(profile)} />
             </div>
           ))}
         </div>
