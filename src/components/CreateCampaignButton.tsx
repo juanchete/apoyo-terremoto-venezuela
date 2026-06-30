@@ -51,6 +51,8 @@ function AuthPromptModal({ next, onClose }: IAuthPromptModalProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Guard de montaje en cliente para el portal (evita createPortal en SSR).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     function onKey(e: KeyboardEvent): void {
       if (e.key === "Escape") onClose();
