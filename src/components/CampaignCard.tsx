@@ -4,7 +4,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { GoFundMeBadge } from "@/components/GoFundMeBadge";
 import { categoryEmoji, categoryLabel, tagEmoji, tagLabel } from "@/lib/constants";
 import { isGoFundMe } from "@/lib/campaign";
-import { formatMoney, formatPct } from "@/lib/format";
+import { formatMoney, formatPct, formatCampaignAge } from "@/lib/format";
 import type { ICampaignWithStats } from "@/types";
 
 interface ICampaignCardProps {
@@ -14,6 +14,7 @@ interface ICampaignCardProps {
 export function CampaignCard({ campaign }: ICampaignCardProps) {
   const pct = campaign.collection_pct;
   const fromGoFundMe = isGoFundMe(campaign.donation_url);
+  const age = formatCampaignAge(campaign.published_at);
 
   return (
     <article className="group relative h-full rounded-2xl border border-border bg-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.18)] hover:border-primary/30">
@@ -89,6 +90,7 @@ export function CampaignCard({ campaign }: ICampaignCardProps) {
 
           <div className="mt-auto pt-4 flex items-center gap-3 text-xs text-muted">
             <span>📍 {campaign.region}</span>
+            {age && <span aria-label="Antigüedad">🕐 {age}</span>}
             {fromGoFundMe ? (
               <span className="ml-auto">
                 <GoFundMeBadge />
