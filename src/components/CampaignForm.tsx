@@ -4,9 +4,19 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { createCampaign, updateCampaign } from "@/lib/actions/campaigns";
 import { extractCampaign } from "@/lib/actions/ingest";
-import { VENEZUELA_REGIONS, NEED_CATEGORIES, CAMPAIGN_TAGS } from "@/lib/constants";
+import {
+  VENEZUELA_REGIONS,
+  NEED_CATEGORIES,
+  CAMPAIGN_TAGS,
+  BENEFICIARY_TYPES,
+} from "@/lib/constants";
 import { formatMoney, formatPct } from "@/lib/format";
-import type { ICampaign, TCampaignTag, TNeedCategory } from "@/types";
+import type {
+  ICampaign,
+  TBeneficiaryType,
+  TCampaignTag,
+  TNeedCategory,
+} from "@/types";
 
 interface ICampaignRef {
   id: string;
@@ -28,6 +38,7 @@ interface IFormState {
   region: string;
   category: TNeedCategory | "";
   tags: TCampaignTag[];
+  beneficiary_type: TBeneficiaryType;
   description: string;
   payment_details: string;
   image_url: string;
@@ -52,6 +63,7 @@ function initialState(campaign?: ICampaign): IFormState {
     region: campaign?.region ?? "",
     category: campaign?.category ?? "",
     tags: campaign?.tags ?? [],
+    beneficiary_type: campaign?.beneficiary_type ?? "family",
     description: campaign?.description ?? "",
     payment_details: campaign?.payment_details ?? "",
     image_url: campaign?.image_url ?? "",
@@ -115,6 +127,7 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
         raised_amount:
           d.raised_amount != null ? String(d.raised_amount) : prev.raised_amount,
         currency: d.currency ?? prev.currency,
+        beneficiary_type: d.beneficiary_type ?? prev.beneficiary_type,
         // Congela lo que leyó la IA como referencia para el equipo moderador.
         ai_goal_amount:
           d.goal_amount != null ? String(d.goal_amount) : prev.ai_goal_amount,
@@ -258,6 +271,38 @@ export function CampaignForm({ campaign }: ICampaignFormProps) {
           </select>
         </div>
       </div>
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">
+          ¿Quién recibe la ayuda?{" "}
+          <span className="text-muted font-normal">(la IA lo sugiere)</span>
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {BENEFICIARY_TYPES.map((b) => {
+            const active = form.beneficiary_type === b.value;
+            return (
+              <label
+                key={b.value}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm cursor-pointer transition-colors ${
+                  active
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border bg-card text-muted hover:border-primary/50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="beneficiary_type"
+                  value={b.value}
+                  checked={active}
+                  onChange={() => set("beneficiary_type", b.value)}
+                  className="sr-only"
+                />
+                <span aria-hidden>{b.emoji}</span> {b.label}
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">

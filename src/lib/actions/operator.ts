@@ -22,6 +22,9 @@ export async function setVerified(
       is_verified: verified,
       verified_by: verified ? operator.id : null,
       verified_at: verified ? new Date().toISOString() : null,
+      // Verificar cierra la revisión: libera el claim para el resto del equipo.
+      claimed_by: null,
+      claimed_at: null,
     })
     .eq('id', campaignId);
 
@@ -44,7 +47,8 @@ export async function setCampaignStatus(
   const supabase = await createClient();
   const { error } = await supabase
     .from('campaigns')
-    .update({ status })
+    // Bajar/restaurar cierra la revisión: libera el claim.
+    .update({ status, claimed_by: null, claimed_at: null })
     .eq('id', campaignId);
 
   if (error) return { error: error.message };
@@ -89,4 +93,42 @@ export async function backfillGoFundMeDates(): Promise<
   revalidatePath('/');
   revalidatePath('/operador');
   return { updated };
+}
+
+// Reparto de trabajo: un voluntario "toma" una campaña para revisarla. Aviso
+// suave —no bloquea al resto—; la vigencia (CLAIM_TTL_MIN) se evalúa al leer.
+// Tomar una con claim vencido simplemente lo sobrescribe.
+export async function claimCampaign(campaignId: string): Promise<IActionResult> {
+  const operator = await requireOperator().catch(() => null);
+  if (!operator) return { error: 'No autorizado.' };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ claimed_by: operator.id, claimed_at: new Date().toISOString() })
+    .eq('id', campaignId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/operador');
+  return {};
+}
+
+// Suelta la campaña para que otro voluntario pueda tomarla.
+export async function releaseCampaign(
+  campaignId: string,
+): Promise<IActionResult> {
+  const operator = await requireOperator().catch(() => null);
+  if (!operator) return { error: 'No autorizado.' };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ claimed_by: null, claimed_at: null })
+    .eq('id', campaignId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/operador');
+  return {};
 }

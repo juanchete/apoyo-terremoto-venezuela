@@ -7,9 +7,13 @@ import {
   VENEZUELA_REGIONS,
   NEED_CATEGORIES,
   CAMPAIGN_TAGS,
+  BENEFICIARY_TYPES,
+  GAP_BUCKETS,
+  gapBucket,
+  isBeneficiaryType,
   isCampaignTag,
 } from "@/lib/constants";
-import type { TCampaignTag, TNeedCategory } from "@/types";
+import type { TBeneficiaryType, TCampaignTag, TNeedCategory } from "@/types";
 
 interface IHomeProps {
   searchParams: Promise<{
@@ -19,6 +23,8 @@ interface IHomeProps {
     verificadas?: string;
     gofundme?: string;
     antiguedad?: string;
+    tipo?: string;
+    brecha?: string;
   }>;
 }
 
@@ -37,16 +43,39 @@ export default async function Home({ searchParams }: IHomeProps) {
   const AGE_HOURS: Record<string, number> = { "1h": 1, "1d": 24, "1w": 168 };
   const ageKey = params.antiguedad ?? "";
   const minAgeHours = AGE_HOURS[ageKey];
+  const beneficiaryType: TBeneficiaryType | undefined =
+    params.tipo && isBeneficiaryType(params.tipo) ? params.tipo : undefined;
+  const gapKey = params.brecha ?? "";
+  const selectedGap = gapBucket(gapKey);
+  const gap = selectedGap
+    ? { min: selectedGap.min, max: selectedGap.max }
+    : undefined;
 
   const [campaigns, stats, profile] = await Promise.all([
-    getCampaigns({ region, category, tags, verifiedOnly, gofundmeOnly, minAgeHours }),
+    getCampaigns({
+      region,
+      category,
+      tags,
+      verifiedOnly,
+      gofundmeOnly,
+      minAgeHours,
+      beneficiaryType,
+      gap,
+    }),
     getDashboardStats(),
     getCurrentProfile(),
   ]);
 
   const selectedTags = new Set<TCampaignTag>(tags);
   const hasFilter = Boolean(
-    region || category || tags.length > 0 || verifiedOnly || gofundmeOnly || minAgeHours,
+    region ||
+      category ||
+      tags.length > 0 ||
+      verifiedOnly ||
+      gofundmeOnly ||
+      minAgeHours ||
+      beneficiaryType ||
+      gap,
   );
   const shown = campaigns.length;
   const countLabel = hasFilter
@@ -131,6 +160,42 @@ export default async function Home({ searchParams }: IHomeProps) {
             <option value="1h">Hace más de 1 hora</option>
             <option value="1d">Hace más de 1 día</option>
             <option value="1w">Hace más de 1 semana</option>
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="tipo" className="block text-xs text-muted font-medium">
+            Tipo
+          </label>
+          <select
+            id="tipo"
+            name="tipo"
+            defaultValue={beneficiaryType ?? ""}
+            className="rounded-full border border-border bg-card px-4 py-2 text-sm hover:border-primary/50 transition-colors"
+          >
+            <option value="">Todas</option>
+            {BENEFICIARY_TYPES.map((b) => (
+              <option key={b.value} value={b.value}>
+                {b.emoji} {b.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="brecha" className="block text-xs text-muted font-medium">
+            Lo que falta
+          </label>
+          <select
+            id="brecha"
+            name="brecha"
+            defaultValue={gapKey}
+            className="rounded-full border border-border bg-card px-4 py-2 text-sm hover:border-primary/50 transition-colors"
+          >
+            <option value="">Cualquier brecha</option>
+            {GAP_BUCKETS.map((b) => (
+              <option key={b.value} value={b.value}>
+                {b.label}
+              </option>
+            ))}
           </select>
         </div>
         <label className="flex items-center gap-2 text-sm pb-2 cursor-pointer">

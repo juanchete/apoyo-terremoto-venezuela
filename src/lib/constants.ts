@@ -1,4 +1,9 @@
-import type { TCampaignTag, TNeedCategory, TUserRole } from '@/types';
+import type {
+  TBeneficiaryType,
+  TCampaignTag,
+  TNeedCategory,
+  TUserRole,
+} from '@/types';
 
 // Roles del sistema. Jerarquía: user < operator < super_admin.
 export interface IRoleMeta {
@@ -110,6 +115,55 @@ export function tagLabel(value: TCampaignTag): string {
 export function tagEmoji(value: TCampaignTag): string {
   return CAMPAIGN_TAGS.find((t) => t.value === value)?.emoji ?? '🏷️';
 }
+
+// Tipo de beneficiario (eje independiente). Familia por defecto; el autor lo
+// elige al publicar y la IA lo sugiere.
+export interface IBeneficiaryTypeMeta {
+  value: TBeneficiaryType;
+  label: string;
+  emoji: string;
+}
+
+export const BENEFICIARY_TYPES: readonly IBeneficiaryTypeMeta[] = [
+  { value: 'family', label: 'Familia', emoji: '👪' },
+  { value: 'organization', label: 'Organización', emoji: '🏢' },
+] as const;
+
+export function beneficiaryTypeLabel(value: TBeneficiaryType): string {
+  return BENEFICIARY_TYPES.find((b) => b.value === value)?.label ?? value;
+}
+
+export function beneficiaryTypeEmoji(value: TBeneficiaryType): string {
+  return BENEFICIARY_TYPES.find((b) => b.value === value)?.emoji ?? '🤝';
+}
+
+export function isBeneficiaryType(value: string): value is TBeneficiaryType {
+  return value === 'family' || value === 'organization';
+}
+
+// Rangos de "lo que falta" (brecha = meta − recaudado) en USD para el filtro
+// del feed. min inclusive, max exclusivo; max null = sin tope superior.
+export interface IGapBucket {
+  value: string;
+  label: string;
+  min: number;
+  max: number | null;
+}
+
+export const GAP_BUCKETS: readonly IGapBucket[] = [
+  { value: 'lt1k', label: 'Falta menos de $1.000', min: 0, max: 1000 },
+  { value: '1k5k', label: 'Falta $1.000 – $5.000', min: 1000, max: 5000 },
+  { value: '5k20k', label: 'Falta $5.000 – $20.000', min: 5000, max: 20000 },
+  { value: 'gt20k', label: 'Falta más de $20.000', min: 20000, max: null },
+] as const;
+
+export function gapBucket(value: string): IGapBucket | undefined {
+  return GAP_BUCKETS.find((b) => b.value === value);
+}
+
+// Vigencia de un claim de revisión: pasado este tiempo se considera libre y
+// otro voluntario puede tomar la campaña. Se evalúa al leer (sin cron).
+export const CLAIM_TTL_MIN = 30;
 
 // Botón de soporte por WhatsApp para guiar a las familias (PRD, sección 4).
 // Configurable por entorno; usa formato internacional sin '+' ni espacios.

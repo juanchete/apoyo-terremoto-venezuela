@@ -48,6 +48,12 @@ export async function resolveReports(campaignId: string): Promise<IActionResult>
 
   if (error) return { error: error.message };
 
+  // Resolver los reportes cierra la revisión: libera el claim del voluntario.
+  await supabase
+    .from('campaigns')
+    .update({ claimed_by: null, claimed_at: null })
+    .eq('id', campaignId);
+
   revalidatePath('/operador');
   return {};
 }

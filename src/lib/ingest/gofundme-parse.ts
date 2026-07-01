@@ -150,6 +150,8 @@ export function extractStructured(
     raised_amount: current?.amount ?? null,
     currency: currency ? currency.toUpperCase() : null,
     gofundme_created_at: readGoFundMeDate(fund),
+    // La sugerencia de tipo de beneficiario la calcula la acción de ingesta.
+    beneficiary_type: null,
   };
 }
 

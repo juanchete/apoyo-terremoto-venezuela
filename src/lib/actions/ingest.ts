@@ -1,6 +1,7 @@
 'use server';
 
 import { extractFromGoFundMe, resolveGoFundMeUrl } from '@/lib/ingest/gofundme';
+import { suggestBeneficiaryType } from '@/lib/ingest/beneficiary';
 import { findActiveCampaignByLink, type ICampaignRef } from '@/lib/data/campaigns';
 import { isGoFundMe } from '@/lib/campaign';
 import type { IExtractedCampaign } from '@/types';
@@ -36,6 +37,13 @@ export async function extractCampaign(url: string): Promise<IExtractResult> {
         'No se pudo leer la página (GoFundMe pudo bloquearla). Completa los datos a mano.',
       duplicate,
     };
+
+  // Sugerencia de tipo de beneficiario (IA con respaldo heurístico) para
+  // pre-seleccionar el radio del formulario. El autor puede corregirla.
+  data.beneficiary_type = await suggestBeneficiaryType(
+    data.title,
+    data.description,
+  );
 
   return { data, duplicate };
 }

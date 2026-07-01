@@ -6,6 +6,7 @@ import type {
   IDashboardStats,
   IReportWithContext,
   IVote,
+  TBeneficiaryType,
   TCampaignTag,
   TNeedCategory,
 } from '@/types';
@@ -52,6 +53,12 @@ export interface ICampaignFilters {
   gofundmeOnly?: boolean;
   // Solo campañas publicadas hace MÁS de N horas (descarta recién creadas).
   minAgeHours?: number;
+  // Solo campañas de este tipo de beneficiario (familia u organización).
+  beneficiaryType?: TBeneficiaryType;
+  // Rango de "lo que falta" (brecha) en USD. Se filtra en memoria tras la
+  // consulta porque la conversión a USD vive en código, no en la DB. min
+  // inclusive, max exclusivo (null = sin tope). Excluye campañas sin meta.
+  gap?: { min: number; max: number | null };
 }
 
 export async function getCampaigns(
@@ -73,6 +80,8 @@ export async function getCampaigns(
   if (filters.tags && filters.tags.length > 0)
     query = query.overlaps('tags', filters.tags);
   if (filters.verifiedOnly) query = query.eq('is_verified', true);
+  if (filters.beneficiaryType)
+    query = query.eq('beneficiary_type', filters.beneficiaryType);
   // Mismo criterio que isGoFundMe(): dominio gofundme.com o enlace gofund.me.
   if (filters.gofundmeOnly)
     query = query.or(
@@ -89,7 +98,26 @@ export async function getCampaigns(
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return (data ?? []) as ICampaignWithStats[];
+  const rows = (data ?? []) as ICampaignWithStats[];
+
+  // Filtro por brecha (lo que falta) en USD. Se hace en memoria porque la
+  // conversión multi-moneda vive en código; el feed no pagina, así que es
+  // seguro. Las campañas sin meta no tienen brecha definida → quedan fuera.
+  if (filters.gap) {
+    const { min, max } = filters.gap;
+    const rates = await getUsdRates();
+    return rows.filter((c) => {
+      if (c.goal_amount == null) return false;
+      const gapUsd = Math.max(
+        toUsd(c.goal_amount, c.currency, rates) -
+          toUsd(c.raised_amount, c.currency, rates),
+        0,
+      );
+      return gapUsd >= min && (max == null || gapUsd < max);
+    });
+  }
+
+  return rows;
 }
 
 export async function getDashboardStats(): Promise<IDashboardStats> {

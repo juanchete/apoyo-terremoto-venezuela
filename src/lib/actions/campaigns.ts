@@ -6,8 +6,8 @@ import { createClient } from '@/lib/supabase/server';
 import { analyzeCampaign } from '@/lib/ai/moderation';
 import { findActiveCampaignByLink, type ICampaignRef } from '@/lib/data/campaigns';
 import { resolveGoFundMeUrl } from '@/lib/ingest/gofundme';
-import { NEED_CATEGORIES, isCampaignTag } from '@/lib/constants';
-import type { TCampaignTag, TNeedCategory } from '@/types';
+import { NEED_CATEGORIES, isBeneficiaryType, isCampaignTag } from '@/lib/constants';
+import type { TBeneficiaryType, TCampaignTag, TNeedCategory } from '@/types';
 
 export interface IActionResult {
   error?: string;
@@ -26,6 +26,7 @@ interface IParsedCampaign {
   region: string;
   category: TNeedCategory;
   tags: TCampaignTag[];
+  beneficiary_type: TBeneficiaryType;
   donation_url: string | null;
   payment_details: string | null;
   image_url: string | null;
@@ -72,6 +73,11 @@ function parseCampaignForm(
         .filter(isCampaignTag),
     ),
   );
+  // Tipo de beneficiario: familia por defecto si llega vacío o inválido.
+  const beneficiaryRaw = String(formData.get('beneficiary_type') ?? '');
+  const beneficiary_type: TBeneficiaryType = isBeneficiaryType(beneficiaryRaw)
+    ? beneficiaryRaw
+    : 'family';
   const donation_url = normalizeUrl(String(formData.get('donation_url') ?? ''));
   const payment_details =
     String(formData.get('payment_details') ?? '').trim() || null;
@@ -102,6 +108,7 @@ function parseCampaignForm(
       region,
       category,
       tags,
+      beneficiary_type,
       donation_url,
       payment_details,
       image_url,

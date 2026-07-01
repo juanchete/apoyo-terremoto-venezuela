@@ -16,6 +16,8 @@ export type TCampaignTag =
   | 'cancer';
 export type TAiStatus = 'pending' | 'relevant' | 'flagged' | 'error';
 export type TReportStatus = 'open' | 'reviewed';
+// Quién recibe la ayuda: una familia/persona o una organización. Eje de filtro.
+export type TBeneficiaryType = 'family' | 'organization';
 
 export interface IProfile {
   id: string;
@@ -43,6 +45,9 @@ export interface ICampaign {
   region: string;
   category: TNeedCategory;
   tags: TCampaignTag[];
+  // Quién recibe la ayuda: familia (default) u organización. Elegido por el
+  // autor al publicar (la IA lo sugiere).
+  beneficiary_type: TBeneficiaryType;
   image_url: string | null;
   goal_amount: number | null;
   raised_amount: number;
@@ -61,6 +66,10 @@ export interface ICampaign {
   last_synced_at: string | null;
   // Fecha real de publicación en GoFundMe (null si manual o aún sin scrapear).
   gofundme_created_at: string | null;
+  // Voluntario que tomó la campaña para revisarla (reparto de trabajo). La
+  // vigencia del claim (30 min) se evalúa en la app, no en la DB.
+  claimed_by: string | null;
+  claimed_at: string | null;
   created_at: string;
 }
 
@@ -68,6 +77,8 @@ export interface ICampaignWithStats extends ICampaign {
   author_name: string;
   // Nombre del voluntario que otorgó el sello (null si no está verificada).
   verified_by_name: string | null;
+  // Nombre del voluntario que tomó la campaña (null si nadie la tiene tomada).
+  claimed_by_name: string | null;
   // coalesce(gofundme_created_at, created_at): fecha para tag/filtro de antigüedad.
   published_at: string;
   trust_count: number;
@@ -116,4 +127,6 @@ export interface IExtractedCampaign {
   currency: string | null;
   // Fecha real de publicación en GoFundMe (ISO); null si no se pudo leer.
   gofundme_created_at: string | null;
+  // Tipo de beneficiario sugerido (familia/organización); null si no se infirió.
+  beneficiary_type: TBeneficiaryType | null;
 }

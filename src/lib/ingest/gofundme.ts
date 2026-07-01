@@ -102,6 +102,9 @@ export async function extractFromGoFundMe(
     raised_amount: null,
     currency: null,
     gofundme_created_at: null,
+    // La sugerencia de tipo de beneficiario la calcula la acción de ingesta
+    // (extractCampaign), no el scraper: así el backfill/sync no pagan esa IA.
+    beneficiary_type: null,
   };
 
   if (!isGoFundMe(url)) return empty;
@@ -151,5 +154,6 @@ export async function extractFromGoFundMe(
     raised_amount,
     currency,
     gofundme_created_at: structured?.gofundme_created_at ?? null,
+    beneficiary_type: null,
   };
 }

@@ -3,10 +3,16 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/data/auth";
 import { getOperatorQueue, getOpenReports } from "@/lib/data/campaigns";
 import { OperatorActionBar } from "@/components/OperatorActionBar";
+import { ClaimControl } from "@/components/ClaimControl";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { AlertBadges } from "@/components/AlertBadges";
 import { BackfillDatesButton } from "@/components/BackfillDatesButton";
-import { categoryEmoji, categoryLabel, tagLabel } from "@/lib/constants";
+import {
+  categoryEmoji,
+  categoryLabel,
+  tagLabel,
+  CLAIM_TTL_MIN,
+} from "@/lib/constants";
 import { getUsdRates } from "@/lib/fx";
 import {
   buildAlertContext,
@@ -112,21 +118,27 @@ export default async function OperadorPage() {
         title="⚠️ Prioridad (alertas / reportes / IA)"
         campaigns={priority}
         alertsByCampaign={alertsByCampaign}
+        currentUserId={profile.id}
+        showClaim
       />
       <QueueSection
         title="Por revisar"
         campaigns={pending}
         alertsByCampaign={alertsByCampaign}
+        currentUserId={profile.id}
+        showClaim
       />
       <QueueSection
         title="Verificadas"
         campaigns={verified}
         alertsByCampaign={alertsByCampaign}
+        currentUserId={profile.id}
       />
       <QueueSection
         title="Publicaciones bajadas"
         campaigns={removed}
         alertsByCampaign={alertsByCampaign}
+        currentUserId={profile.id}
       />
     </div>
   );
@@ -153,13 +165,43 @@ function Stat({ label, value, tone }: IStatProps) {
   );
 }
 
+// Estado del claim resuelto en el servidor: un claim solo cuenta como activo
+// si se tomó hace menos de CLAIM_TTL_MIN. Pasado ese tiempo se considera libre.
+interface IClaimState {
+  active: boolean;
+  byName: string | null;
+  isMine: boolean;
+  minutesAgo: number;
+}
+
+function claimState(c: ICampaignWithStats, currentUserId: string): IClaimState {
+  if (!c.claimed_by || !c.claimed_at) {
+    return { active: false, byName: null, isMine: false, minutesAgo: 0 };
+  }
+  const minutesAgo = Math.floor((Date.now() - Date.parse(c.claimed_at)) / 60000);
+  return {
+    active: minutesAgo < CLAIM_TTL_MIN,
+    byName: c.claimed_by_name,
+    isMine: c.claimed_by === currentUserId,
+    minutesAgo,
+  };
+}
+
 interface IQueueSectionProps {
   title: string;
   campaigns: ICampaignWithStats[];
   alertsByCampaign: Map<string, IAlert[]>;
+  currentUserId: string;
+  showClaim?: boolean;
 }
 
-function QueueSection({ title, campaigns, alertsByCampaign }: IQueueSectionProps) {
+function QueueSection({
+  title,
+  campaigns,
+  alertsByCampaign,
+  currentUserId,
+  showClaim,
+}: IQueueSectionProps) {
   if (campaigns.length === 0) return null;
 
   return (
@@ -193,6 +235,19 @@ function QueueSection({ title, campaigns, alertsByCampaign }: IQueueSectionProps
               </div>
               {campaign.is_verified && <VerifiedBadge />}
             </div>
+            {showClaim &&
+              (() => {
+                const claim = claimState(campaign, currentUserId);
+                return (
+                  <ClaimControl
+                    campaignId={campaign.id}
+                    claimActive={claim.active}
+                    claimedByName={claim.byName}
+                    isMine={claim.isMine}
+                    minutesAgo={claim.minutesAgo}
+                  />
+                );
+              })()}
             <AlertBadges alerts={alertsByCampaign.get(campaign.id) ?? []} />
             <p className="text-sm text-muted line-clamp-2">
               {campaign.description}
